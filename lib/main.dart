@@ -375,7 +375,7 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
                       width: double.infinity,
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.18),
+                        color: Colors.black.withValues(alpha: 0.18),
                         borderRadius: BorderRadius.circular(18),
                       ),
                       child: Column(
