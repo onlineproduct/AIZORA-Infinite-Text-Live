@@ -1,40 +1,113 @@
+name: Android APK Build
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  android-apk:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Generate Android scaffold if missing
+        run: |
+          if [ ! -f android/gradlew ]; then
+            flutter create --platforms=android . \
+              --project-name aizora_infinite_text_live \
+              --org com.example
+          fi
+
       - name: Configure Android compile SDK
         run: |
           python3 - <<'PY'
           from pathlib import Path
+          import re
 
-          files = [
+          candidates = [
               Path("android/app/build.gradle.kts"),
               Path("android/app/build.gradle"),
           ]
-          file = next((p for p in files if p.exists()), None)
-          if file is None:
-              raise SystemExit("Android Gradle build file not found")
 
-          text = file.read_text()
-          import re
+          file = next((p for p in candidates if p.exists()), None)
+
+          if file is None:
+              raise SystemExit("Android Gradle file missing")
+
+          content = file.read_text()
 
           if file.suffix == ".kts":
-              text, count = re.subn(
-                  r"compileSdk\s*=\s*(?:flutter\.compileSdkVersion|\d+)",
-                  "compileSdk = 36",
-                  text,
-              )
+              pattern = r"(?m)^\s*compileSdk\s*=\s*(?:flutter\.compileSdkVersion|\d+)\s*$"
+              replacement = "    compileSdk = 36"
           else:
-              text, count = re.subn(
-                  r"compileSdk(?:Version)?\s*(?:=\s*)?(?:flutter\.compileSdkVersion|\d+)",
-                  "compileSdk 36",
-                  text,
-              )
+              pattern = r"(?m)^\s*compileSdk(?:Version)?\s*(?:=\s*)?(?:flutter\.compileSdkVersion|\d+)\s*$"
+              replacement = "    compileSdk 36"
+
+          updated, count = re.subn(
+              pattern,
+              replacement,
+              content
+          )
 
           if count != 1:
-              raise SystemExit("Could not update compileSdk safely")
+              raise SystemExit(
+                  f"Expected one compileSdk setting, found {count}"
+              )
 
-          file.write_text(text)
-          print(f"Updated {file} to compileSdk 36")
+          file.write_text(updated)
+          print(f"Configured compileSdk 36 in {file}")
           PY
 
       - name: Install Android SDK 36
         run: |
-          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
-            "platforms;android-36" || true
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          "$SDKMANAGER" --install \
+            "platforms;android-36" \
+            "build-tools;36.0.0" \
+            "platform-tools"
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze Flutter project
+        run: flutter analyze
+
+      - name: Run Flutter tests
+        run: flutter test
+
+      - name: Build release APK
+        run: flutter build apk --release
+
+      - name: Verify and rename APK
+        run: |
+          APK="build/app/outputs/flutter-apk/app-release.apk"
+          test -s "$APK"
+          cp "$APK" \
+            build/app/outputs/flutter-apk/aizora-infinite-text-live-apk.apk
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: aizora-infinite-text-live-apk
+          path: build/app/outputs/flutter-apk/aizora-infinite-text-live-apk.apk
+          if-no-files-found: error
+          retention-days: 7
