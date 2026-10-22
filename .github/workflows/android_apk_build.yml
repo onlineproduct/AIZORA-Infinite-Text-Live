@@ -103,8 +103,8 @@ jobs:
 
           for file in files:
               source = file.read_text()
-              pattern = r"(?m)^(\\s*)compileSdk(?:Version)?\\s*(?:=\\s*)?(?:33|flutter\\.compileSdkVersion)\\s*$"
-              updated, count = re.subn(pattern, r"\\g<1>compileSdkVersion 36" if file.suffix != ".kts" else r"\\g<1>compileSdk = 36", source)
+              pattern = r"(?m)^(\s*)compileSdk(?:Version)?\s*(?:=\s*)?(?:33|flutter\.compileSdkVersion)\s*$"
+              updated, count = re.subn(pattern, r"\g<1>compileSdkVersion 36" if file.suffix != ".kts" else r"\g<1>compileSdk = 36", source)
               if count != 1:
                   raise SystemExit(f"Expected one SDK 33 setting in {file}; found {count}")
               file.write_text(updated)
