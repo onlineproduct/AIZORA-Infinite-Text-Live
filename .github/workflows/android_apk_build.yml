@@ -88,6 +88,29 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Fix audioplayers Android compile SDK
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import os
+          import re
+
+          pub_cache = Path(os.environ.get("PUB_CACHE", str(Path.home() / ".pub-cache")))
+          files = list(pub_cache.glob("hosted/pub.dev/audioplayers_android-*/android/build.gradle"))
+          files += list(pub_cache.glob("hosted/pub.dev/audioplayers_android-*/android/build.gradle.kts"))
+          if not files:
+              raise SystemExit("audioplayers_android Gradle configuration not found")
+
+          for file in files:
+              source = file.read_text()
+              pattern = r"(?m)^(\\s*)compileSdk(?:Version)?\\s*(?:=\\s*)?(?:33|flutter\\.compileSdkVersion)\\s*$"
+              updated, count = re.subn(pattern, r"\\g<1>compileSdkVersion 36" if file.suffix != ".kts" else r"\\g<1>compileSdk = 36", source)
+              if count != 1:
+                  raise SystemExit(f"Expected one SDK 33 setting in {file}; found {count}")
+              file.write_text(updated)
+              print(f"Set compile SDK 36: {file}")
+          PY
+
       - name: Analyze Flutter project
         run: flutter analyze
 
