@@ -49,17 +49,20 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
     [const Color(0xFF0F172A), const Color(0xFF10B981)],
   ];
 
-  final List<String> _texts = [
-    'AIZORA Infinite Text Live',
-    'স্বাগতম। আপনার সৃষ্টির মুহূর্ত',
-    'বাংলা ও English একসাথে',
-    'Beautiful motion. Strong rhythm.',
-    'Live visuals with a moving story',
-    'Automation keeps the scene alive',
-    'AIZORA — powered by motion and music',
-  ];
-
+  final Map<String, List<String>> _categories = {
+    'ভালোবাসা': ['ভালোবাসা মানে একে অপরের পাশে থাকা।', 'তোমার হাসিতে আমার পৃথিবী সুন্দর।', 'সত্যিকারের ভালোবাসা যত্নে বেঁচে থাকে।', 'কিছু অনুভূতি শব্দের চেয়েও গভীর।'],
+    'কষ্ট': ['সব নীরবতার পেছনে একটি গল্প থাকে।', 'সময় অনেক কিছু শেখায়।', 'মন খারাপের দিনও একদিন কেটে যায়।', 'কিছু স্মৃতি চুপচাপ থেকে যায়।'],
+    'মোটিভেশন': ['আজকের চেষ্টা আগামী দিনের শক্তি।', 'হাল ছেড়ো না, সামনে এগিয়ে যাও।', 'ছোট পদক্ষেপও বড় পরিবর্তন আনে।', 'নিজের ওপর বিশ্বাস রাখো।'],
+    'ইসলামিক': ['আল্লাহর রহমত থেকে নিরাশ হয়ো না।', 'সৎ পথে চলার চেষ্টা করো।', 'কৃতজ্ঞতা হৃদয়ে শান্তি আনে।', 'ধৈর্য ও দোয়া জীবনের সঙ্গী।'],
+    'জীবন': ['জীবন প্রতিদিন নতুন কিছু শেখায়।', 'সুন্দর মুহূর্তগুলো মনে রাখো।', 'নিজের গতিতে এগিয়ে যাও।', 'প্রতিটি সকাল একটি নতুন সুযোগ।'],
+    'বন্ধুত্ব': ['সত্যিকারের বন্ধু পাশে থাকে।', 'বন্ধুত্ব মানে বিশ্বাস।', 'ভালো বন্ধু জীবনের উপহার।', 'একটি হাসি বন্ধুত্বকে উজ্জ্বল করে।'],
+    'নিজের লেখা': ['এখানে আপনার নিজের লেখা যোগ করুন।'],
+  };
   final List<String> _animationNames = ['Fade', 'Slide', 'Scale'];
+  String _selectedCategory = 'ভালোবাসা';
+  String _selectedAnimation = 'Fade';
+  List<String> get _texts => _categories[_selectedCategory]!;
+
 
   String? _selectedMusicPath;
   String _statusMessage = 'Ready';
@@ -103,7 +106,7 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
       }
       setState(() {
         _textIndex = (_textIndex + 1) % _texts.length;
-        _animationIndex = (_animationIndex + 1) % _animationNames.length;
+        // Keep the animation selected by the user.
       });
     });
   }
@@ -225,9 +228,31 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
     }
   }
 
+  Future<void> _addCustomText() async {
+    final controller = TextEditingController();
+    final value = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('নিজের লেখা যোগ করুন'),
+        content: TextField(controller: controller, maxLines: 4, maxLength: 300),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('বাতিল')),
+          FilledButton(onPressed: () => Navigator.pop(dialogContext, controller.text.trim()), child: const Text('যোগ করুন')),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (!mounted || value == null || value.isEmpty) return;
+    setState(() {
+      _categories['নিজের লেখা']!.add(value);
+      _selectedCategory = 'নিজের লেখা';
+      _textIndex = _categories['নিজের লেখা']!.length - 1;
+    });
+  }
+
   Widget _buildAnimatedText() {
     final activeText = _texts[_textIndex];
-    final activeAnimation = _animationNames[_animationIndex];
+    final activeAnimation = _selectedAnimation;
 
     switch (activeAnimation) {
       case 'Fade':
@@ -362,7 +387,36 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 18),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 10,
+                      runSpacing: 8,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        DropdownButton<String>(
+                          value: _selectedCategory,
+                          items: _categories.keys.map((name) => DropdownMenuItem(value: name, child: Text(name))).toList(),
+                          onChanged: (value) {
+                            if (value == null) return;
+                            setState(() { _selectedCategory = value; _textIndex = 0; });
+                          },
+                        ),
+                        DropdownButton<String>(
+                          value: _selectedAnimation,
+                          items: _animationNames.map((name) => DropdownMenuItem(value: name, child: Text(name))).toList(),
+                          onChanged: (value) {
+                            if (value == null) return;
+                            setState(() { _selectedAnimation = value; });
+                          },
+                        ),
+                        IconButton(
+                          tooltip: 'নিজের লেখা যোগ করুন',
+                          onPressed: _addCustomText,
+                          icon: const Icon(Icons.add_circle_outline),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
                     Expanded(
                       child: Center(
                         child: Padding(
