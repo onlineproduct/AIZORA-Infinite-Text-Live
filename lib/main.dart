@@ -289,7 +289,7 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
             key: ValueKey<String>(activeText),
             activeText,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 34,
               fontWeight: FontWeight.w800,
               color: _selectedTextBackground == 'সাদা' ? Colors.black : Colors.white,
@@ -315,7 +315,7 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
           child: Text(
             activeText,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 34,
               fontWeight: FontWeight.w800,
               color: _selectedTextBackground == 'সাদা' ? Colors.black : Colors.white,
@@ -338,7 +338,7 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
           child: Text(
             activeText,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 34,
               fontWeight: FontWeight.w800,
               color: _selectedTextBackground == 'সাদা' ? Colors.black : Colors.white,
@@ -351,7 +351,7 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
         return Text(
           activeText,
           textAlign: TextAlign.center,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 34,
             fontWeight: FontWeight.w800,
             color: _selectedTextBackground == 'সাদা' ? Colors.black : Colors.white,
