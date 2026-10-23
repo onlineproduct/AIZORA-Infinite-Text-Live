@@ -337,7 +337,7 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
   @override
   Widget build(BuildContext context) {
     final colors = _backgrounds[_backgroundIndex];
-    final activeAnimation = _animationNames[_animationIndex];
+    final activeAnimation = _selectedAnimation;
 
     return LayoutBuilder(
       builder: (context, constraints) {
