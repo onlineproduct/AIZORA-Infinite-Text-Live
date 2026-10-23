@@ -88,6 +88,25 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
   String _selectedTheme = 'নীল';
   String _selectedTextBackground = 'কালো';
   double _textBackgroundOpacity = 0.72;
+  Color _customGradientStart = const Color(0xFF0B1120);
+  Color _customGradientEnd = const Color(0xFF1D4ED8);
+  Color _customTextColor = Colors.white;
+  Color _customBoxColor = const Color(0xFF000000);
+
+  List<List<Color>> get _activeBackgrounds => _selectedTheme == 'কাস্টম'
+      ? [
+          [_customGradientStart, _customGradientEnd],
+          [_customGradientEnd, _customGradientStart],
+        ]
+      : _themePalettes[_selectedTheme]!;
+
+  Color? get _activeTextBoxColor => _selectedTextBackground == 'কাস্টম'
+      ? _customBoxColor
+      : _textBackgroundChoices[_selectedTextBackground];
+
+  Color get _activeTextColor => _selectedTextBackground == 'সাদা'
+      ? Colors.black
+      : (_selectedTextBackground == 'কাস্টম' ? _customTextColor : Colors.white);
   List<String> get _texts => _categories[_selectedCategory]!;
 
 
@@ -122,8 +141,7 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
         return;
       }
       setState(() {
-        final backgrounds = _themePalettes[_selectedTheme]!;
-        _backgroundIndex = (_backgroundIndex + 1) % backgrounds.length;
+        _backgroundIndex = (_backgroundIndex + 1) % _activeBackgrounds.length;
       });
     });
 
@@ -136,6 +154,137 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
         // Keep the animation selected by the user.
       });
     });
+  }
+
+  Future<Color?> _chooseColor(String title, Color initialColor) async {
+    var red = initialColor.red.toDouble();
+    var green = initialColor.green.toDouble();
+    var blue = initialColor.blue.toDouble();
+
+    return showDialog<Color>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          final selected = Color.fromARGB(255, red.round(), green.round(), blue.round());
+          Widget channelSlider(String label, double value, ValueChanged<double> onChanged) {
+            return Row(
+              children: [
+                SizedBox(width: 54, child: Text(label)),
+                Expanded(
+                  child: Slider(
+                    value: value,
+                    min: 0,
+                    max: 255,
+                    divisions: 255,
+                    onChanged: onChanged,
+                  ),
+                ),
+                SizedBox(width: 34, child: Text(value.round().toString())),
+              ],
+            );
+          }
+
+          return AlertDialog(
+            title: Text(title),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 72,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: selected,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.white54),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  channelSlider('লাল', red, (value) => setDialogState(() => red = value)),
+                  channelSlider('সবুজ', green, (value) => setDialogState(() => green = value)),
+                  channelSlider('নীল', blue, (value) => setDialogState(() => blue = value)),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: const Text('বাতিল'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(dialogContext, selected),
+                child: const Text('নির্বাচন'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _showThemeCustomizer() async {
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          Widget colorOption(String label, Color color, Future<Color?> Function() choose) {
+            return ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(label),
+              leading: Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: color,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.white54),
+                ),
+              ),
+              trailing: const Icon(Icons.color_lens_outlined),
+              onTap: () async {
+                final picked = await choose();
+                if (picked == null || !mounted) return;
+                setState(() {
+                  if (label == 'ব্যাকগ্রাউন্ডের প্রথম রং') _customGradientStart = picked;
+                  if (label == 'ব্যাকগ্রাউন্ডের দ্বিতীয় রং') _customGradientEnd = picked;
+                  if (label == 'টেক্সটের রং') _customTextColor = picked;
+                  if (label == 'টেক্সট বক্সের রং') _customBoxColor = picked;
+                  _selectedTheme = 'কাস্টম';
+                });
+                setDialogState(() {});
+              },
+            );
+          }
+
+          return AlertDialog(
+            title: const Text('থিম কাস্টমাইজ করুন'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  colorOption('ব্যাকগ্রাউন্ডের প্রথম রং', _customGradientStart,
+                      () => _chooseColor('প্রথম ব্যাকগ্রাউন্ড রং', _customGradientStart)),
+                  colorOption('ব্যাকগ্রাউন্ডের দ্বিতীয় রং', _customGradientEnd,
+                      () => _chooseColor('দ্বিতীয় ব্যাকগ্রাউন্ড রং', _customGradientEnd)),
+                  colorOption('টেক্সটের রং', _customTextColor,
+                      () => _chooseColor('টেক্সটের রং', _customTextColor)),
+                  colorOption('টেক্সট বক্সের রং', _customBoxColor,
+                      () => _chooseColor('টেক্সট বক্সের রং', _customBoxColor)),
+                  const SizedBox(height: 8),
+                  const Text('প্রতিটি রঙের লাল, সবুজ ও নীল মান বদলে নিজের রং তৈরি করুন।'),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: const Text('বন্ধ করুন'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
   }
 
   void _setStatus(String value) {
@@ -292,7 +441,7 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
             style: TextStyle(
               fontSize: 34,
               fontWeight: FontWeight.w800,
-              color: _selectedTextBackground == 'সাদা' ? Colors.black : Colors.white,
+              color: _activeTextColor,
               letterSpacing: 1.2,
               height: 1.2,
             ),
@@ -364,8 +513,7 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    final colors = _themePalettes[_selectedTheme]![
-        _backgroundIndex % _themePalettes[_selectedTheme]!.length];
+    final colors = _activeBackgrounds[_backgroundIndex % _activeBackgrounds.length];
     final activeAnimation = _selectedAnimation;
 
     return LayoutBuilder(
@@ -439,7 +587,7 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
                         ),
                         DropdownButton<String>(
                           value: _selectedTheme,
-                          items: _themePalettes.keys.map((name) => DropdownMenuItem(value: name, child: Text('থিম: $name'))).toList(),
+                          items: [..._themePalettes.keys, 'কাস্টম'].map((name) => DropdownMenuItem(value: name, child: Text('থিম: $name'))).toList(),
                           onChanged: (value) {
                             if (value == null) return;
                             setState(() {
@@ -450,11 +598,16 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
                         ),
                         DropdownButton<String>(
                           value: _selectedTextBackground,
-                          items: _textBackgroundChoices.keys.map((name) => DropdownMenuItem(value: name, child: Text('টেক্সট: $name'))).toList(),
+                          items: [..._textBackgroundChoices.keys, 'কাস্টম'].map((name) => DropdownMenuItem(value: name, child: Text('টেক্সট: $name'))).toList(),
                           onChanged: (value) {
                             if (value == null) return;
                             setState(() { _selectedTextBackground = value; });
                           },
+                        ),
+                        IconButton(
+                          tooltip: 'থিম কাস্টমাইজ করুন',
+                          onPressed: _showThemeCustomizer,
+                          icon: const Icon(Icons.palette_outlined),
                         ),
                         IconButton(
                           tooltip: 'নিজের লেখা যোগ করুন',
@@ -471,8 +624,7 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
                             decoration: BoxDecoration(
-                              color: _textBackgroundChoices[_selectedTextBackground]
-                                  ?.withValues(alpha: _textBackgroundOpacity),
+                              color: _activeTextBoxColor?.withValues(alpha: _textBackgroundOpacity),
                               borderRadius: BorderRadius.circular(18),
                               border: _selectedTextBackground == 'বক্স নেই'
                                   ? null
