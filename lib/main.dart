@@ -5,6 +5,76 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
+class LetterFadeLoopText extends StatefulWidget {
+  const LetterFadeLoopText({super.key, required this.text, required this.style});
+
+  final String text;
+  final TextStyle style;
+
+  @override
+  State<LetterFadeLoopText> createState() => _LetterFadeLoopTextState();
+}
+
+class _LetterFadeLoopTextState extends State<LetterFadeLoopText>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: Duration(milliseconds: (widget.text.characters.length * 110).clamp(1600, 7000)),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void didUpdateWidget(covariant LetterFadeLoopText oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.text != widget.text) {
+      _controller.duration = Duration(
+        milliseconds: (widget.text.characters.length * 110).clamp(1600, 7000),
+      );
+      _controller
+        ..reset()
+        ..repeat(reverse: true);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final characters = widget.text.characters.toList();
+    if (characters.isEmpty) return const SizedBox.shrink();
+
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        final progress = _controller.value * (characters.length + 1);
+        return Text.rich(
+          TextSpan(
+            children: List.generate(characters.length, (index) {
+              final opacity = (progress - index).clamp(0.0, 1.0);
+              return TextSpan(
+                text: characters[index],
+                style: widget.style.copyWith(
+                  color: widget.style.color?.withValues(alpha: opacity),
+                ),
+              );
+            }),
+          ),
+          textAlign: TextAlign.center,
+        );
+      },
+    );
+  }
+}
+
 void main() {
   runApp(const AizoraApp());
 }
@@ -41,13 +111,37 @@ class AizoraHomePage extends StatefulWidget {
 class _AizoraHomePageState extends State<AizoraHomePage> {
   final AudioPlayer _audioPlayer = AudioPlayer();
 
-  final List<List<Color>> _backgrounds = [
-    [const Color(0xFF0B1120), const Color(0xFF1D4ED8)],
-    [const Color(0xFF111827), const Color(0xFF7C3AED)],
-    [const Color(0xFF1F2937), const Color(0xFF14B8A6)],
-    [const Color(0xFF1F1B4D), const Color(0xFFE11D48)],
-    [const Color(0xFF0F172A), const Color(0xFF10B981)],
-  ];
+  final Map<String, List<List<Color>>> _themePalettes = {
+    'নীল': [
+      [const Color(0xFF0B1120), const Color(0xFF1D4ED8)],
+      [const Color(0xFF111827), const Color(0xFF2563EB)],
+    ],
+    'বেগুনি': [
+      [const Color(0xFF111827), const Color(0xFF7C3AED)],
+      [const Color(0xFF312E81), const Color(0xFF9333EA)],
+    ],
+    'সবুজ': [
+      [const Color(0xFF052E2B), const Color(0xFF059669)],
+      [const Color(0xFF1F2937), const Color(0xFF14B8A6)],
+    ],
+    'সূর্যাস্ত': [
+      [const Color(0xFF431407), const Color(0xFFEA580C)],
+      [const Color(0xFF1F1B4D), const Color(0xFFE11D48)],
+    ],
+    'কালো': [
+      [const Color(0xFF000000), const Color(0xFF27272A)],
+      [const Color(0xFF09090B), const Color(0xFF18181B)],
+    ],
+  };
+  final Map<String, Color?> _textBackgroundChoices = {
+    'বক্স নেই': null,
+    'কালো': const Color(0xFF000000),
+    'সাদা': const Color(0xFFFFFFFF),
+    'নীল': const Color(0xFF1D4ED8),
+    'লাল': const Color(0xFFDC2626),
+    'সবুজ': const Color(0xFF059669),
+    'বেগুনি': const Color(0xFF7C3AED),
+  };
 
   final Map<String, List<String>> _categories = {
     'ভালোবাসা': ['ভালোবাসা মানে একে অপরের পাশে থাকা।', 'তোমার হাসিতে আমার পৃথিবী সুন্দর।', 'সত্যিকারের ভালোবাসা যত্নে বেঁচে থাকে।', 'কিছু অনুভূতি শব্দের চেয়েও গভীর।'],
@@ -58,15 +152,42 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
     'বন্ধুত্ব': ['সত্যিকারের বন্ধু পাশে থাকে।', 'বন্ধুত্ব মানে বিশ্বাস।', 'ভালো বন্ধু জীবনের উপহার।', 'একটি হাসি বন্ধুত্বকে উজ্জ্বল করে।'],
     'নিজের লেখা': ['এখানে আপনার নিজের লেখা যোগ করুন।'],
   };
-  final List<String> _animationNames = ['Fade', 'Slide', 'Scale'];
+  final List<String> _animationNames = ['Fade', 'Slide', 'Scale', 'Letter Fade In/Out', 'Typewriter', 'Bounce', 'Rotate', 'Zoom Pulse'];
   String _selectedCategory = 'ভালোবাসা';
   String _selectedAnimation = 'Fade';
+  String _selectedFontWeight = 'বোল্ড';
+  String _selectedFontFamily = 'সাধারণ';
+  bool _italicText = false;
+  double _textFontSize = 34;
+  String _selectedTheme = 'নীল';
+  String _selectedTextBackground = 'কালো';
+  double _textBackgroundOpacity = 0.72;
+  Color _customGradientStart = const Color(0xFF0B1120);
+  Color _customGradientEnd = const Color(0xFF1D4ED8);
+  Color _customTextColor = Colors.white;
+  Color _customBoxColor = const Color(0xFF000000);
+  bool _useCustomTextColor = false;
+
+  List<List<Color>> get _activeBackgrounds => _selectedTheme == 'কাস্টম'
+      ? [
+          [_customGradientStart, _customGradientEnd],
+          [_customGradientEnd, _customGradientStart],
+        ]
+      : _themePalettes[_selectedTheme]!;
+
+  Color? get _activeTextBoxColor => _selectedTextBackground == 'কাস্টম'
+      ? _customBoxColor
+      : _textBackgroundChoices[_selectedTextBackground];
+
+  Color get _activeTextColor => _useCustomTextColor
+      ? _customTextColor
+      : (_selectedTextBackground == 'সাদা' ? Colors.black : Colors.white);
   List<String> get _texts => _categories[_selectedCategory]!;
 
 
   String? _selectedMusicPath;
-  String _statusMessage = 'Ready';
-  bool _isRunning = false;
+  String _statusMessage = 'Animation running automatically.';
+  bool _isRunning = true;
   bool _isMusicPlaying = false;
   int _backgroundIndex = 0;
   int _textIndex = 0;
@@ -95,7 +216,7 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
         return;
       }
       setState(() {
-        _backgroundIndex = (_backgroundIndex + 1) % _backgrounds.length;
+        _backgroundIndex = (_backgroundIndex + 1) % _activeBackgrounds.length;
       });
     });
 
@@ -108,6 +229,143 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
         // Keep the animation selected by the user.
       });
     });
+  }
+
+  Future<Color?> _chooseColor(String title, Color initialColor) async {
+    var red = (initialColor.r * 255).roundToDouble();
+    var green = (initialColor.g * 255).roundToDouble();
+    var blue = (initialColor.b * 255).roundToDouble();
+
+    return showDialog<Color>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          final selected = Color.fromARGB(255, red.round(), green.round(), blue.round());
+          Widget channelSlider(String label, double value, ValueChanged<double> onChanged) {
+            return Row(
+              children: [
+                SizedBox(width: 54, child: Text(label)),
+                Expanded(
+                  child: Slider(
+                    value: value,
+                    min: 0,
+                    max: 255,
+                    divisions: 255,
+                    onChanged: onChanged,
+                  ),
+                ),
+                SizedBox(width: 34, child: Text(value.round().toString())),
+              ],
+            );
+          }
+
+          return AlertDialog(
+            title: Text(title),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 72,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: selected,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.white54),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  channelSlider('লাল', red, (value) => setDialogState(() => red = value)),
+                  channelSlider('সবুজ', green, (value) => setDialogState(() => green = value)),
+                  channelSlider('নীল', blue, (value) => setDialogState(() => blue = value)),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: const Text('বাতিল'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(dialogContext, selected),
+                child: const Text('নির্বাচন'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _showThemeCustomizer() async {
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          Widget colorOption(String label, Color color, Future<Color?> Function() choose) {
+            return ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(label),
+              leading: Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: color,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.white54),
+                ),
+              ),
+              trailing: const Icon(Icons.color_lens_outlined),
+              onTap: () async {
+                final picked = await choose();
+                if (picked == null || !mounted) return;
+                setState(() {
+                  if (label == 'ব্যাকগ্রাউন্ডের প্রথম রং') _customGradientStart = picked;
+                  if (label == 'ব্যাকগ্রাউন্ডের দ্বিতীয় রং') _customGradientEnd = picked;
+                  if (label == 'টেক্সটের রং') {
+                    _customTextColor = picked;
+                    _useCustomTextColor = true;
+                  }
+                  if (label == 'টেক্সট বক্সের রং') {
+                    _customBoxColor = picked;
+                    _selectedTextBackground = 'কাস্টম';
+                  }
+                  _selectedTheme = 'কাস্টম';
+                });
+                setDialogState(() {});
+              },
+            );
+          }
+
+          return AlertDialog(
+            title: const Text('থিম কাস্টমাইজ করুন'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  colorOption('ব্যাকগ্রাউন্ডের প্রথম রং', _customGradientStart,
+                      () => _chooseColor('প্রথম ব্যাকগ্রাউন্ড রং', _customGradientStart)),
+                  colorOption('ব্যাকগ্রাউন্ডের দ্বিতীয় রং', _customGradientEnd,
+                      () => _chooseColor('দ্বিতীয় ব্যাকগ্রাউন্ড রং', _customGradientEnd)),
+                  colorOption('টেক্সটের রং', _customTextColor,
+                      () => _chooseColor('টেক্সটের রং', _customTextColor)),
+                  colorOption('টেক্সট বক্সের রং', _customBoxColor,
+                      () => _chooseColor('টেক্সট বক্সের রং', _customBoxColor)),
+                  const SizedBox(height: 8),
+                  const Text('প্রতিটি রঙের লাল, সবুজ ও নীল মান বদলে নিজের রং তৈরি করুন।'),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: const Text('বন্ধ করুন'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
   }
 
   void _setStatus(String value) {
@@ -251,92 +509,109 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
 
   Widget _buildAnimatedText() {
     final activeText = _texts[_textIndex];
-    final activeAnimation = _selectedAnimation;
+    final style = TextStyle(
+      fontSize: _textFontSize,
+      fontWeight: switch (_selectedFontWeight) {
+        'পাতলা' => FontWeight.w400,
+        'মাঝারি' => FontWeight.w600,
+        'অতিরিক্ত বোল্ড' => FontWeight.w900,
+        _ => FontWeight.w800,
+      },
+      fontStyle: _italicText ? FontStyle.italic : FontStyle.normal,
+      fontFamily: switch (_selectedFontFamily) {
+        'সেরিফ' => 'serif',
+        'মনোস্পেস' => 'monospace',
+        _ => null,
+      },
+      color: _activeTextColor,
+      letterSpacing: 1.2,
+      height: 1.2,
+    );
 
-    switch (activeAnimation) {
+    switch (_selectedAnimation) {
       case 'Fade':
         return AnimatedSwitcher(
           duration: const Duration(milliseconds: 900),
-          child: Text(
-            key: ValueKey<String>(activeText),
-            activeText,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 34,
-              fontWeight: FontWeight.w800,
-              color: Colors.white,
-              letterSpacing: 1.2,
-              height: 1.2,
-            ),
-          ),
+          transitionBuilder: (child, animation) => FadeTransition(opacity: animation, child: child),
+          child: Text(activeText, key: ValueKey<String>(activeText), textAlign: TextAlign.center, style: style),
         );
       case 'Slide':
         return TweenAnimationBuilder<double>(
-          tween: Tween(begin: 28, end: 0),
-          duration: const Duration(milliseconds: 750),
+          key: ValueKey('slide-$activeText'),
+          tween: Tween(begin: 36, end: 0),
+          duration: const Duration(milliseconds: 850),
           curve: Curves.easeOutCubic,
-          builder: (context, value, child) {
-            return Transform.translate(
-              offset: Offset(0, value),
-              child: Opacity(
-                opacity: value < 15 ? 1.0 : 0.5,
-                child: child,
-              ),
-            );
-          },
-          child: Text(
-            activeText,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 34,
-              fontWeight: FontWeight.w800,
-              color: Colors.white,
-              letterSpacing: 1.2,
-              height: 1.2,
-            ),
+          builder: (context, value, child) => Transform.translate(
+            offset: Offset(0, value),
+            child: Opacity(opacity: (1 - value / 36).clamp(0.0, 1.0), child: child),
           ),
+          child: Text(activeText, textAlign: TextAlign.center, style: style),
         );
       case 'Scale':
         return TweenAnimationBuilder<double>(
-          tween: Tween(begin: 0.72, end: 1.0),
-          duration: const Duration(milliseconds: 700),
+          key: ValueKey('scale-$activeText'),
+          tween: Tween(begin: 0.65, end: 1.0),
+          duration: const Duration(milliseconds: 800),
           curve: Curves.easeOutBack,
+          builder: (context, value, child) => Transform.scale(scale: value, child: child),
+          child: Text(activeText, textAlign: TextAlign.center, style: style),
+        );
+      case 'Letter Fade In/Out':
+        return LetterFadeLoopText(
+          key: ValueKey('letters-$activeText'),
+          text: activeText,
+          style: style,
+        );
+      case 'Typewriter':
+        return TweenAnimationBuilder<double>(
+          key: ValueKey('typewriter-$activeText'),
+          tween: Tween(begin: 0, end: activeText.characters.length.toDouble()),
+          duration: Duration(milliseconds: (activeText.characters.length * 90).clamp(900, 6000)),
+          curve: Curves.linear,
           builder: (context, value, child) {
-            return Transform.scale(
-              scale: value,
-              child: child,
-            );
+            final chars = activeText.characters.toList();
+            final visibleCount = value.floor().clamp(0, chars.length);
+            return Text(chars.take(visibleCount).join(), textAlign: TextAlign.center, style: style);
           },
-          child: Text(
-            activeText,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 34,
-              fontWeight: FontWeight.w800,
-              color: Colors.white,
-              letterSpacing: 1.2,
-              height: 1.2,
-            ),
+        );
+      case 'Bounce':
+        return TweenAnimationBuilder<double>(
+          key: ValueKey('bounce-$activeText'),
+          tween: Tween(begin: -45, end: 0),
+          duration: const Duration(milliseconds: 1000),
+          curve: Curves.bounceOut,
+          builder: (context, value, child) => Transform.translate(
+            offset: Offset(0, value),
+            child: child,
           ),
+          child: Text(activeText, textAlign: TextAlign.center, style: style),
+        );
+      case 'Rotate':
+        return TweenAnimationBuilder<double>(
+          key: ValueKey('rotate-$activeText'),
+          tween: Tween(begin: -0.18, end: 0),
+          duration: const Duration(milliseconds: 900),
+          curve: Curves.easeOutBack,
+          builder: (context, value, child) => Transform.rotate(angle: value, child: child),
+          child: Text(activeText, textAlign: TextAlign.center, style: style),
+        );
+      case 'Zoom Pulse':
+        return TweenAnimationBuilder<double>(
+          key: ValueKey('pulse-$activeText'),
+          tween: Tween(begin: 0.5, end: 1.0),
+          duration: const Duration(milliseconds: 900),
+          curve: Curves.elasticOut,
+          builder: (context, value, child) => Transform.scale(scale: value, child: child),
+          child: Text(activeText, textAlign: TextAlign.center, style: style),
         );
       default:
-        return Text(
-          activeText,
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-            fontSize: 34,
-            fontWeight: FontWeight.w800,
-            color: Colors.white,
-            letterSpacing: 1.2,
-            height: 1.2,
-          ),
-        );
+        return Text(activeText, textAlign: TextAlign.center, style: style);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final colors = _backgrounds[_backgroundIndex];
+    final colors = _activeBackgrounds[_backgroundIndex % _activeBackgrounds.length];
     final activeAnimation = _selectedAnimation;
 
     return LayoutBuilder(
@@ -408,6 +683,58 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
                             setState(() { _selectedAnimation = value; });
                           },
                         ),
+                        DropdownButton<String>(
+                          value: _selectedFontWeight,
+                          items: ['পাতলা', 'মাঝারি', 'বোল্ড', 'অতিরিক্ত বোল্ড']
+                              .map((name) => DropdownMenuItem(value: name, child: Text('ফন্ট: $name')))
+                              .toList(),
+                          onChanged: (value) {
+                            if (value == null) return;
+                            setState(() => _selectedFontWeight = value);
+                          },
+                        ),
+                        DropdownButton<String>(
+                          value: _selectedFontFamily,
+                          items: ['সাধারণ', 'সেরিফ', 'মনোস্পেস']
+                              .map((name) => DropdownMenuItem(value: name, child: Text(name)))
+                              .toList(),
+                          onChanged: (value) {
+                            if (value == null) return;
+                            setState(() => _selectedFontFamily = value);
+                          },
+                        ),
+                        IconButton(
+                          tooltip: _italicText ? 'ইটালিক বন্ধ করুন' : 'ইটালিক করুন',
+                          onPressed: () => setState(() => _italicText = !_italicText),
+                          icon: Icon(_italicText ? Icons.format_italic : Icons.format_italic_outlined),
+                        ),
+                        DropdownButton<String>(
+                          value: _selectedTheme,
+                          items: [..._themePalettes.keys, 'কাস্টম'].map((name) => DropdownMenuItem(value: name, child: Text('থিম: $name'))).toList(),
+                          onChanged: (value) {
+                            if (value == null) return;
+                            setState(() {
+                              _selectedTheme = value;
+                              _backgroundIndex = 0;
+                            });
+                          },
+                        ),
+                        DropdownButton<String>(
+                          value: _selectedTextBackground,
+                          items: [..._textBackgroundChoices.keys, 'কাস্টম'].map((name) => DropdownMenuItem(value: name, child: Text('টেক্সট: $name'))).toList(),
+                          onChanged: (value) {
+                            if (value == null) return;
+                            setState(() {
+                              _selectedTextBackground = value;
+                              if (value != 'কাস্টম') _useCustomTextColor = false;
+                            });
+                          },
+                        ),
+                        IconButton(
+                          tooltip: 'থিম কাস্টমাইজ করুন',
+                          onPressed: _showThemeCustomizer,
+                          icon: const Icon(Icons.palette_outlined),
+                        ),
                         IconButton(
                           tooltip: 'নিজের লেখা যোগ করুন',
                           onPressed: _addCustomText,
@@ -415,15 +742,74 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
                         ),
                       ],
                     ),
+                    Row(
+                      children: [
+                        const Icon(Icons.text_fields),
+                        const SizedBox(width: 8),
+                        const Text('লেখার সাইজ'),
+                        Expanded(
+                          child: Slider(
+                            value: _textFontSize,
+                            min: 18,
+                            max: 64,
+                            divisions: 23,
+                            label: _textFontSize.round().toString(),
+                            onChanged: (value) => setState(() => _textFontSize = value),
+                          ),
+                        ),
+                        Text(_textFontSize.round().toString()),
+                      ],
+                    ),
                     const SizedBox(height: 8),
                     Expanded(
                       child: Center(
                         child: Padding(
                           padding: EdgeInsets.symmetric(horizontal: isWide ? 80 : 20),
-                          child: _buildAnimatedText(),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+                            decoration: BoxDecoration(
+                              color: _activeTextBoxColor?.withValues(alpha: _textBackgroundOpacity),
+                              borderRadius: BorderRadius.circular(18),
+                              border: _selectedTextBackground == 'বক্স নেই'
+                                  ? null
+                                  : Border.all(color: Colors.white.withValues(alpha: 0.28)),
+                              boxShadow: _selectedTextBackground == 'বক্স নেই'
+                                  ? null
+                                  : [
+                                      BoxShadow(
+                                        color: Colors.black.withValues(alpha: 0.18),
+                                        blurRadius: 18,
+                                        offset: const Offset(0, 8),
+                                      ),
+                                    ],
+                            ),
+                            child: _buildAnimatedText(),
+                          ),
                         ),
                       ),
                     ),
+                    if (_selectedTextBackground != 'বক্স নেই')
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Row(
+                          children: [
+                            const Text('বক্সের স্বচ্ছতা'),
+                            Expanded(
+                              child: Slider(
+                                value: _textBackgroundOpacity,
+                                min: 0.15,
+                                max: 1.0,
+                                divisions: 17,
+                                label: '${(_textBackgroundOpacity * 100).round()}%',
+                                onChanged: (value) {
+                                  setState(() { _textBackgroundOpacity = value; });
+                                },
+                              ),
+                            ),
+                            Text('${(_textBackgroundOpacity * 100).round()}%'),
+                          ],
+                        ),
+                      ),
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(16),
