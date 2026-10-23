@@ -5,6 +5,76 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
+class LetterFadeLoopText extends StatefulWidget {
+  const LetterFadeLoopText({super.key, required this.text, required this.style});
+
+  final String text;
+  final TextStyle style;
+
+  @override
+  State<LetterFadeLoopText> createState() => _LetterFadeLoopTextState();
+}
+
+class _LetterFadeLoopTextState extends State<LetterFadeLoopText>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: Duration(milliseconds: (widget.text.characters.length * 110).clamp(1600, 7000)),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void didUpdateWidget(covariant LetterFadeLoopText oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.text != widget.text) {
+      _controller.duration = Duration(
+        milliseconds: (widget.text.characters.length * 110).clamp(1600, 7000),
+      );
+      _controller
+        ..reset()
+        ..repeat(reverse: true);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final characters = widget.text.characters.toList();
+    if (characters.isEmpty) return const SizedBox.shrink();
+
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        final progress = _controller.value * (characters.length + 1);
+        return Text.rich(
+          TextSpan(
+            children: List.generate(characters.length, (index) {
+              final opacity = (progress - index).clamp(0.0, 1.0);
+              return TextSpan(
+                text: characters[index],
+                style: widget.style.copyWith(
+                  color: widget.style.color?.withValues(alpha: opacity),
+                ),
+              );
+            }),
+          ),
+          textAlign: TextAlign.center,
+        );
+      },
+    );
+  }
+}
+
 void main() {
   runApp(const AizoraApp());
 }
@@ -82,7 +152,7 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
     'বন্ধুত্ব': ['সত্যিকারের বন্ধু পাশে থাকে।', 'বন্ধুত্ব মানে বিশ্বাস।', 'ভালো বন্ধু জীবনের উপহার।', 'একটি হাসি বন্ধুত্বকে উজ্জ্বল করে।'],
     'নিজের লেখা': ['এখানে আপনার নিজের লেখা যোগ করুন।'],
   };
-  final List<String> _animationNames = ['Fade', 'Slide', 'Scale'];
+  final List<String> _animationNames = ['Fade', 'Slide', 'Scale', 'Letter Fade In/Out', 'Typewriter', 'Bounce', 'Rotate', 'Zoom Pulse'];
   String _selectedCategory = 'ভালোবাসা';
   String _selectedAnimation = 'Fade';
   String _selectedTheme = 'নীল';
@@ -435,86 +505,92 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
 
   Widget _buildAnimatedText() {
     final activeText = _texts[_textIndex];
-    final activeAnimation = _selectedAnimation;
+    final style = TextStyle(
+      fontSize: 34,
+      fontWeight: FontWeight.w800,
+      color: _activeTextColor,
+      letterSpacing: 1.2,
+      height: 1.2,
+    );
 
-    switch (activeAnimation) {
+    switch (_selectedAnimation) {
       case 'Fade':
         return AnimatedSwitcher(
           duration: const Duration(milliseconds: 900),
-          child: Text(
-            key: ValueKey<String>(activeText),
-            activeText,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 34,
-              fontWeight: FontWeight.w800,
-              color: _activeTextColor,
-              letterSpacing: 1.2,
-              height: 1.2,
-            ),
-          ),
+          transitionBuilder: (child, animation) => FadeTransition(opacity: animation, child: child),
+          child: Text(activeText, key: ValueKey<String>(activeText), textAlign: TextAlign.center, style: style),
         );
       case 'Slide':
         return TweenAnimationBuilder<double>(
-          tween: Tween(begin: 28, end: 0),
-          duration: const Duration(milliseconds: 750),
+          key: ValueKey('slide-$activeText'),
+          tween: Tween(begin: 36, end: 0),
+          duration: const Duration(milliseconds: 850),
           curve: Curves.easeOutCubic,
-          builder: (context, value, child) {
-            return Transform.translate(
-              offset: Offset(0, value),
-              child: Opacity(
-                opacity: value < 15 ? 1.0 : 0.5,
-                child: child,
-              ),
-            );
-          },
-          child: Text(
-            activeText,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 34,
-              fontWeight: FontWeight.w800,
-              color: _activeTextColor,
-              letterSpacing: 1.2,
-              height: 1.2,
-            ),
+          builder: (context, value, child) => Transform.translate(
+            offset: Offset(0, value),
+            child: Opacity(opacity: (1 - value / 36).clamp(0.0, 1.0), child: child),
           ),
+          child: Text(activeText, textAlign: TextAlign.center, style: style),
         );
       case 'Scale':
         return TweenAnimationBuilder<double>(
-          tween: Tween(begin: 0.72, end: 1.0),
-          duration: const Duration(milliseconds: 700),
+          key: ValueKey('scale-$activeText'),
+          tween: Tween(begin: 0.65, end: 1.0),
+          duration: const Duration(milliseconds: 800),
           curve: Curves.easeOutBack,
+          builder: (context, value, child) => Transform.scale(scale: value, child: child),
+          child: Text(activeText, textAlign: TextAlign.center, style: style),
+        );
+      case 'Letter Fade In/Out':
+        return LetterFadeLoopText(
+          key: ValueKey('letters-$activeText'),
+          text: activeText,
+          style: style,
+        );
+      case 'Typewriter':
+        return TweenAnimationBuilder<double>(
+          key: ValueKey('typewriter-$activeText'),
+          tween: Tween(begin: 0, end: activeText.characters.length.toDouble()),
+          duration: Duration(milliseconds: (activeText.characters.length * 90).clamp(900, 6000)),
+          curve: Curves.linear,
           builder: (context, value, child) {
-            return Transform.scale(
-              scale: value,
-              child: child,
-            );
+            final chars = activeText.characters.toList();
+            final visibleCount = value.floor().clamp(0, chars.length);
+            return Text(chars.take(visibleCount).join(), textAlign: TextAlign.center, style: style);
           },
-          child: Text(
-            activeText,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 34,
-              fontWeight: FontWeight.w800,
-              color: _activeTextColor,
-              letterSpacing: 1.2,
-              height: 1.2,
-            ),
+        );
+      case 'Bounce':
+        return TweenAnimationBuilder<double>(
+          key: ValueKey('bounce-$activeText'),
+          tween: Tween(begin: -45, end: 0),
+          duration: const Duration(milliseconds: 1000),
+          curve: Curves.bounceOut,
+          builder: (context, value, child) => Transform.translate(
+            offset: Offset(0, value),
+            child: child,
           ),
+          child: Text(activeText, textAlign: TextAlign.center, style: style),
+        );
+      case 'Rotate':
+        return TweenAnimationBuilder<double>(
+          key: ValueKey('rotate-$activeText'),
+          tween: Tween(begin: -0.18, end: 0),
+          duration: const Duration(milliseconds: 900),
+          curve: Curves.easeOutBack,
+          builder: (context, value, child) => Transform.rotate(angle: value, child: child),
+          child: Text(activeText, textAlign: TextAlign.center, style: style),
+        );
+      case 'Zoom Pulse':
+        return TweenAnimationBuilder<double>(
+          key: ValueKey('pulse-$activeText'),
+          tween: Tween(begin: 0.5, end: 1.0),
+          duration: const Duration(milliseconds: 900),
+          curve: Curves.elasticOut,
+          builder: (context, value, child) => Transform.scale(scale: value, child: child),
+          child: Text(activeText, textAlign: TextAlign.center, style: style),
         );
       default:
-        return Text(
-          activeText,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 34,
-            fontWeight: FontWeight.w800,
-            color: _activeTextColor,
-            letterSpacing: 1.2,
-            height: 1.2,
-          ),
-        );
+        return Text(activeText, textAlign: TextAlign.center, style: style);
     }
   }
 
