@@ -167,6 +167,9 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
   Color _customTextColor = Colors.white;
   Color _customBoxColor = const Color(0xFF000000);
   bool _useCustomTextColor = false;
+  bool _textBorderEnabled = true;
+  double _textBorderWidth = 2.0;
+  Color _textBorderColor = Colors.black;
 
   List<List<Color>> get _activeBackgrounds => _selectedTheme == 'কাস্টম'
       ? [
@@ -524,6 +527,18 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
         _ => null,
       },
       color: _activeTextColor,
+      shadows: _textBorderEnabled
+          ? [
+              Shadow(color: _textBorderColor, offset: Offset(-_textBorderWidth, 0)),
+              Shadow(color: _textBorderColor, offset: Offset(_textBorderWidth, 0)),
+              Shadow(color: _textBorderColor, offset: Offset(0, -_textBorderWidth)),
+              Shadow(color: _textBorderColor, offset: Offset(0, _textBorderWidth)),
+              Shadow(color: _textBorderColor, offset: Offset(-_textBorderWidth, -_textBorderWidth)),
+              Shadow(color: _textBorderColor, offset: Offset(_textBorderWidth, -_textBorderWidth)),
+              Shadow(color: _textBorderColor, offset: Offset(-_textBorderWidth, _textBorderWidth)),
+              Shadow(color: _textBorderColor, offset: Offset(_textBorderWidth, _textBorderWidth)),
+            ]
+          : null,
       letterSpacing: 1.2,
       height: 1.2,
     );
@@ -787,6 +802,30 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
                           ),
                         ),
                         Text(_textFontSize.round().toString()),
+                      ],
+                    ),
+                    Row(
+                      children: [
+                        const Icon(Icons.border_color_outlined),
+                        const SizedBox(width: 8),
+                        const Text('টেক্সট বর্ডার'),
+                        Switch(
+                          value: _textBorderEnabled,
+                          onChanged: (value) => setState(() => _textBorderEnabled = value),
+                        ),
+                        Expanded(
+                          child: Slider(
+                            value: _textBorderWidth,
+                            min: 0.5,
+                            max: 4.0,
+                            divisions: 7,
+                            label: _textBorderWidth.toStringAsFixed(1),
+                            onChanged: _textBorderEnabled
+                                ? (value) => setState(() => _textBorderWidth = value)
+                                : null,
+                          ),
+                        ),
+                        Text(_textBorderWidth.toStringAsFixed(1)),
                       ],
                     ),
                     const SizedBox(height: 8),
