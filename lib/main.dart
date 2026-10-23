@@ -186,8 +186,8 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
 
 
   String? _selectedMusicPath;
-  String _statusMessage = 'Ready';
-  bool _isRunning = false;
+  String _statusMessage = 'Animation running automatically.';
+  bool _isRunning = true;
   bool _isMusicPlaying = false;
   int _backgroundIndex = 0;
   int _textIndex = 0;
