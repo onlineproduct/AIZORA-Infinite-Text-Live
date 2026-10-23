@@ -92,6 +92,7 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
   Color _customGradientEnd = const Color(0xFF1D4ED8);
   Color _customTextColor = Colors.white;
   Color _customBoxColor = const Color(0xFF000000);
+  bool _useCustomTextColor = false;
 
   List<List<Color>> get _activeBackgrounds => _selectedTheme == 'কাস্টম'
       ? [
@@ -104,9 +105,9 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
       ? _customBoxColor
       : _textBackgroundChoices[_selectedTextBackground];
 
-  Color get _activeTextColor => _selectedTextBackground == 'সাদা'
-      ? Colors.black
-      : (_selectedTextBackground == 'কাস্টম' ? _customTextColor : Colors.white);
+  Color get _activeTextColor => _useCustomTextColor
+      ? _customTextColor
+      : (_selectedTextBackground == 'সাদা' ? Colors.black : Colors.white);
   List<String> get _texts => _categories[_selectedCategory]!;
 
 
@@ -247,8 +248,14 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
                 setState(() {
                   if (label == 'ব্যাকগ্রাউন্ডের প্রথম রং') _customGradientStart = picked;
                   if (label == 'ব্যাকগ্রাউন্ডের দ্বিতীয় রং') _customGradientEnd = picked;
-                  if (label == 'টেক্সটের রং') _customTextColor = picked;
-                  if (label == 'টেক্সট বক্সের রং') _customBoxColor = picked;
+                  if (label == 'টেক্সটের রং') {
+                    _customTextColor = picked;
+                    _useCustomTextColor = true;
+                  }
+                  if (label == 'টেক্সট বক্সের রং') {
+                    _customBoxColor = picked;
+                    _selectedTextBackground = 'কাস্টম';
+                  }
                   _selectedTheme = 'কাস্টম';
                 });
                 setDialogState(() {});
