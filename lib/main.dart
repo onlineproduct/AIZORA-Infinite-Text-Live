@@ -41,13 +41,37 @@ class AizoraHomePage extends StatefulWidget {
 class _AizoraHomePageState extends State<AizoraHomePage> {
   final AudioPlayer _audioPlayer = AudioPlayer();
 
-  final List<List<Color>> _backgrounds = [
-    [const Color(0xFF0B1120), const Color(0xFF1D4ED8)],
-    [const Color(0xFF111827), const Color(0xFF7C3AED)],
-    [const Color(0xFF1F2937), const Color(0xFF14B8A6)],
-    [const Color(0xFF1F1B4D), const Color(0xFFE11D48)],
-    [const Color(0xFF0F172A), const Color(0xFF10B981)],
-  ];
+  final Map<String, List<List<Color>>> _themePalettes = {
+    'নীল': [
+      [const Color(0xFF0B1120), const Color(0xFF1D4ED8)],
+      [const Color(0xFF111827), const Color(0xFF2563EB)],
+    ],
+    'বেগুনি': [
+      [const Color(0xFF111827), const Color(0xFF7C3AED)],
+      [const Color(0xFF312E81), const Color(0xFF9333EA)],
+    ],
+    'সবুজ': [
+      [const Color(0xFF052E2B), const Color(0xFF059669)],
+      [const Color(0xFF1F2937), const Color(0xFF14B8A6)],
+    ],
+    'সূর্যাস্ত': [
+      [const Color(0xFF431407), const Color(0xFFEA580C)],
+      [const Color(0xFF1F1B4D), const Color(0xFFE11D48)],
+    ],
+    'কালো': [
+      [const Color(0xFF000000), const Color(0xFF27272A)],
+      [const Color(0xFF09090B), const Color(0xFF18181B)],
+    ],
+  };
+  final Map<String, Color?> _textBackgroundChoices = {
+    'বক্স নেই': null,
+    'কালো': const Color(0xFF000000),
+    'সাদা': const Color(0xFFFFFFFF),
+    'নীল': const Color(0xFF1D4ED8),
+    'লাল': const Color(0xFFDC2626),
+    'সবুজ': const Color(0xFF059669),
+    'বেগুনি': const Color(0xFF7C3AED),
+  };
 
   final Map<String, List<String>> _categories = {
     'ভালোবাসা': ['ভালোবাসা মানে একে অপরের পাশে থাকা।', 'তোমার হাসিতে আমার পৃথিবী সুন্দর।', 'সত্যিকারের ভালোবাসা যত্নে বেঁচে থাকে।', 'কিছু অনুভূতি শব্দের চেয়েও গভীর।'],
@@ -61,6 +85,9 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
   final List<String> _animationNames = ['Fade', 'Slide', 'Scale'];
   String _selectedCategory = 'ভালোবাসা';
   String _selectedAnimation = 'Fade';
+  String _selectedTheme = 'নীল';
+  String _selectedTextBackground = 'কালো';
+  double _textBackgroundOpacity = 0.72;
   List<String> get _texts => _categories[_selectedCategory]!;
 
 
@@ -95,7 +122,8 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
         return;
       }
       setState(() {
-        _backgroundIndex = (_backgroundIndex + 1) % _backgrounds.length;
+        final backgrounds = _themePalettes[_selectedTheme]!;
+        _backgroundIndex = (_backgroundIndex + 1) % backgrounds.length;
       });
     });
 
@@ -336,7 +364,8 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    final colors = _backgrounds[_backgroundIndex];
+    final colors = _themePalettes[_selectedTheme]![
+        _backgroundIndex % _themePalettes[_selectedTheme]!.length];
     final activeAnimation = _selectedAnimation;
 
     return LayoutBuilder(
@@ -408,6 +437,25 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
                             setState(() { _selectedAnimation = value; });
                           },
                         ),
+                        DropdownButton<String>(
+                          value: _selectedTheme,
+                          items: _themePalettes.keys.map((name) => DropdownMenuItem(value: name, child: Text('থিম: $name'))).toList(),
+                          onChanged: (value) {
+                            if (value == null) return;
+                            setState(() {
+                              _selectedTheme = value;
+                              _backgroundIndex = 0;
+                            });
+                          },
+                        ),
+                        DropdownButton<String>(
+                          value: _selectedTextBackground,
+                          items: _textBackgroundChoices.keys.map((name) => DropdownMenuItem(value: name, child: Text('টেক্সট: $name'))).toList(),
+                          onChanged: (value) {
+                            if (value == null) return;
+                            setState(() { _selectedTextBackground = value; });
+                          },
+                        ),
                         IconButton(
                           tooltip: 'নিজের লেখা যোগ করুন',
                           onPressed: _addCustomText,
@@ -420,10 +468,52 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
                       child: Center(
                         child: Padding(
                           padding: EdgeInsets.symmetric(horizontal: isWide ? 80 : 20),
-                          child: _buildAnimatedText(),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+                            decoration: BoxDecoration(
+                              color: _textBackgroundChoices[_selectedTextBackground]
+                                  ?.withValues(alpha: _textBackgroundOpacity),
+                              borderRadius: BorderRadius.circular(18),
+                              border: _selectedTextBackground == 'বক্স নেই'
+                                  ? null
+                                  : Border.all(color: Colors.white.withValues(alpha: 0.28)),
+                              boxShadow: _selectedTextBackground == 'বক্স নেই'
+                                  ? null
+                                  : [
+                                      BoxShadow(
+                                        color: Colors.black.withValues(alpha: 0.18),
+                                        blurRadius: 18,
+                                        offset: const Offset(0, 8),
+                                      ),
+                                    ],
+                            ),
+                            child: _buildAnimatedText(),
+                          ),
                         ),
                       ),
                     ),
+                    if (_selectedTextBackground != 'বক্স নেই')
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Row(
+                          children: [
+                            const Text('বক্সের স্বচ্ছতা'),
+                            Expanded(
+                              child: Slider(
+                                value: _textBackgroundOpacity,
+                                min: 0.15,
+                                max: 1.0,
+                                divisions: 17,
+                                label: '${(_textBackgroundOpacity * 100).round()}%',
+                                onChanged: (value) {
+                                  setState(() { _textBackgroundOpacity = value; });
+                                },
+                              ),
+                            ),
+                            Text('${(_textBackgroundOpacity * 100).round()}%'),
+                          ],
+                        ),
+                      ),
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(16),
