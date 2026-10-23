@@ -813,6 +813,29 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
                           value: _textBorderEnabled,
                           onChanged: (value) => setState(() => _textBorderEnabled = value),
                         ),
+                        IconButton(
+                          tooltip: 'বর্ডারের রং কাস্টমাইজ করুন',
+                          onPressed: _textBorderEnabled
+                              ? () async {
+                                  final picked = await _chooseColor(
+                                    'টেক্সট বর্ডারের রং',
+                                    _textBorderColor,
+                                  );
+                                  if (picked != null && mounted) {
+                                    setState(() => _textBorderColor = picked);
+                                  }
+                                }
+                              : null,
+                          icon: Container(
+                            width: 22,
+                            height: 22,
+                            decoration: BoxDecoration(
+                              color: _textBorderColor,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white, width: 1.5),
+                            ),
+                          ),
+                        ),
                         Expanded(
                           child: Slider(
                             value: _textBorderWidth,
