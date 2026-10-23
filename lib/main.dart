@@ -631,7 +631,7 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
             child: SafeArea(
               child: Padding(
                 padding: EdgeInsets.all(isWide ? 24 : 16),
-                child: Column(
+                child: ListView(
                   children: [
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -660,6 +660,35 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
                           ),
                         ),
                       ],
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      height: isWide ? 420 : constraints.maxHeight * 0.34,
+                      child: Center(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(horizontal: isWide ? 80 : 20),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+                            decoration: BoxDecoration(
+                              color: _activeTextBoxColor?.withValues(alpha: _textBackgroundOpacity),
+                              borderRadius: BorderRadius.circular(18),
+                              border: _selectedTextBackground == 'বক্স নেই'
+                                  ? null
+                                  : Border.all(color: Colors.white.withValues(alpha: 0.28)),
+                              boxShadow: _selectedTextBackground == 'বক্স নেই'
+                                  ? null
+                                  : [
+                                      BoxShadow(
+                                        color: Colors.black.withValues(alpha: 0.18),
+                                        blurRadius: 18,
+                                        offset: const Offset(0, 8),
+                                      ),
+                                    ],
+                            ),
+                            child: _buildAnimatedText(),
+                          ),
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 12),
                     Wrap(
@@ -761,33 +790,6 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
                       ],
                     ),
                     const SizedBox(height: 8),
-                    Expanded(
-                      child: Center(
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(horizontal: isWide ? 80 : 20),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-                            decoration: BoxDecoration(
-                              color: _activeTextBoxColor?.withValues(alpha: _textBackgroundOpacity),
-                              borderRadius: BorderRadius.circular(18),
-                              border: _selectedTextBackground == 'বক্স নেই'
-                                  ? null
-                                  : Border.all(color: Colors.white.withValues(alpha: 0.28)),
-                              boxShadow: _selectedTextBackground == 'বক্স নেই'
-                                  ? null
-                                  : [
-                                      BoxShadow(
-                                        color: Colors.black.withValues(alpha: 0.18),
-                                        blurRadius: 18,
-                                        offset: const Offset(0, 8),
-                                      ),
-                                    ],
-                            ),
-                            child: _buildAnimatedText(),
-                          ),
-                        ),
-                      ),
-                    ),
                     if (_selectedTextBackground != 'বক্স নেই')
                       Padding(
                         padding: const EdgeInsets.only(bottom: 8),
@@ -864,6 +866,20 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
                                 ),
                               ),
                             ],
+                          ),
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton.icon(
+                              onPressed: () => _setStatus('Facebook Live is not connected yet. Streaming pipeline is the next development stage.'),
+                              icon: const Icon(Icons.wifi_tethering),
+                              label: const Text('Facebook Live শুরু করুন'),
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                foregroundColor: Colors.white,
+                                side: const BorderSide(color: Colors.white54),
+                              ),
+                            ),
                           ),
                           const SizedBox(height: 12),
                           Text(
