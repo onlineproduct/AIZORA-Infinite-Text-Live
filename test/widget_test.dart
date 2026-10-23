@@ -6,7 +6,6 @@ void main() {
     await tester.pumpWidget(const AizoraApp());
 
     expect(find.text('AIZORA'), findsOneWidget);
-    expect(find.text('Stop Animation'), findsOneWidget);
     expect(find.text('ভালোবাসা মানে একে অপরের পাশে থাকা।'), findsOneWidget);
 
     await tester.pump(const Duration(seconds: 3));
@@ -17,6 +16,12 @@ void main() {
 
   testWidgets('Animation can still be stopped and restarted', (tester) async {
     await tester.pumpWidget(const AizoraApp());
+
+    await tester.scrollUntilVisible(
+      find.text('Stop Animation'),
+      250,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.tap(find.text('Stop Animation'));
     await tester.pump();
     expect(find.text('Start Animation'), findsOneWidget);
