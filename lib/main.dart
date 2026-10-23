@@ -232,9 +232,9 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
   }
 
   Future<Color?> _chooseColor(String title, Color initialColor) async {
-    var red = initialColor.red.toDouble();
-    var green = initialColor.green.toDouble();
-    var blue = initialColor.blue.toDouble();
+    var red = (initialColor.r * 255).roundToDouble();
+    var green = (initialColor.g * 255).roundToDouble();
+    var blue = (initialColor.b * 255).roundToDouble();
 
     return showDialog<Color>(
       context: context,
