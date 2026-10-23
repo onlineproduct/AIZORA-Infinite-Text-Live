@@ -292,7 +292,7 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
             style: const TextStyle(
               fontSize: 34,
               fontWeight: FontWeight.w800,
-              color: Colors.white,
+              color: _selectedTextBackground == 'সাদা' ? Colors.black : Colors.white,
               letterSpacing: 1.2,
               height: 1.2,
             ),
@@ -318,7 +318,7 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
             style: const TextStyle(
               fontSize: 34,
               fontWeight: FontWeight.w800,
-              color: Colors.white,
+              color: _selectedTextBackground == 'সাদা' ? Colors.black : Colors.white,
               letterSpacing: 1.2,
               height: 1.2,
             ),
@@ -341,7 +341,7 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
             style: const TextStyle(
               fontSize: 34,
               fontWeight: FontWeight.w800,
-              color: Colors.white,
+              color: _selectedTextBackground == 'সাদা' ? Colors.black : Colors.white,
               letterSpacing: 1.2,
               height: 1.2,
             ),
@@ -354,7 +354,7 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
           style: const TextStyle(
             fontSize: 34,
             fontWeight: FontWeight.w800,
-            color: Colors.white,
+            color: _selectedTextBackground == 'সাদা' ? Colors.black : Colors.white,
             letterSpacing: 1.2,
             height: 1.2,
           ),
