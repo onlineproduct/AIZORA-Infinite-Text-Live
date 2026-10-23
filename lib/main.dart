@@ -155,6 +155,10 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
   final List<String> _animationNames = ['Fade', 'Slide', 'Scale', 'Letter Fade In/Out', 'Typewriter', 'Bounce', 'Rotate', 'Zoom Pulse'];
   String _selectedCategory = 'ভালোবাসা';
   String _selectedAnimation = 'Fade';
+  String _selectedFontWeight = 'বোল্ড';
+  String _selectedFontFamily = 'সাধারণ';
+  bool _italicText = false;
+  double _textFontSize = 34;
   String _selectedTheme = 'নীল';
   String _selectedTextBackground = 'কালো';
   double _textBackgroundOpacity = 0.72;
@@ -506,8 +510,19 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
   Widget _buildAnimatedText() {
     final activeText = _texts[_textIndex];
     final style = TextStyle(
-      fontSize: 34,
-      fontWeight: FontWeight.w800,
+      fontSize: _textFontSize,
+      fontWeight: switch (_selectedFontWeight) {
+        'পাতলা' => FontWeight.w400,
+        'মাঝারি' => FontWeight.w600,
+        'অতিরিক্ত বোল্ড' => FontWeight.w900,
+        _ => FontWeight.w800,
+      },
+      fontStyle: _italicText ? FontStyle.italic : FontStyle.normal,
+      fontFamily: switch (_selectedFontFamily) {
+        'সেরিফ' => 'serif',
+        'মনোস্পেস' => 'monospace',
+        _ => null,
+      },
       color: _activeTextColor,
       letterSpacing: 1.2,
       height: 1.2,
@@ -669,6 +684,31 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
                           },
                         ),
                         DropdownButton<String>(
+                          value: _selectedFontWeight,
+                          items: ['পাতলা', 'মাঝারি', 'বোল্ড', 'অতিরিক্ত বোল্ড']
+                              .map((name) => DropdownMenuItem(value: name, child: Text('ফন্ট: $name')))
+                              .toList(),
+                          onChanged: (value) {
+                            if (value == null) return;
+                            setState(() => _selectedFontWeight = value);
+                          },
+                        ),
+                        DropdownButton<String>(
+                          value: _selectedFontFamily,
+                          items: ['সাধারণ', 'সেরিফ', 'মনোস্পেস']
+                              .map((name) => DropdownMenuItem(value: name, child: Text(name)))
+                              .toList(),
+                          onChanged: (value) {
+                            if (value == null) return;
+                            setState(() => _selectedFontFamily = value);
+                          },
+                        ),
+                        IconButton(
+                          tooltip: _italicText ? 'ইটালিক বন্ধ করুন' : 'ইটালিক করুন',
+                          onPressed: () => setState(() => _italicText = !_italicText),
+                          icon: Icon(_italicText ? Icons.format_italic : Icons.format_italic_outlined),
+                        ),
+                        DropdownButton<String>(
                           value: _selectedTheme,
                           items: [..._themePalettes.keys, 'কাস্টম'].map((name) => DropdownMenuItem(value: name, child: Text('থিম: $name'))).toList(),
                           onChanged: (value) {
@@ -700,6 +740,24 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
                           onPressed: _addCustomText,
                           icon: const Icon(Icons.add_circle_outline),
                         ),
+                      ],
+                    ),
+                    Row(
+                      children: [
+                        const Icon(Icons.text_fields),
+                        const SizedBox(width: 8),
+                        const Text('লেখার সাইজ'),
+                        Expanded(
+                          child: Slider(
+                            value: _textFontSize,
+                            min: 18,
+                            max: 64,
+                            divisions: 23,
+                            label: _textFontSize.round().toString(),
+                            onChanged: (value) => setState(() => _textFontSize = value),
+                          ),
+                        ),
+                        Text(_textFontSize.round().toString()),
                       ],
                     ),
                     const SizedBox(height: 8),
