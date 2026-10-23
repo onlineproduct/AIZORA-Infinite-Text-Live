@@ -70,7 +70,6 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
   bool _isMusicPlaying = false;
   int _backgroundIndex = 0;
   int _textIndex = 0;
-  int _animationIndex = 0;
 
   Timer? _backgroundTimer;
   Timer? _textTimer;
