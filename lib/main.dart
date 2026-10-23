@@ -608,7 +608,10 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
                           items: [..._textBackgroundChoices.keys, 'কাস্টম'].map((name) => DropdownMenuItem(value: name, child: Text('টেক্সট: $name'))).toList(),
                           onChanged: (value) {
                             if (value == null) return;
-                            setState(() { _selectedTextBackground = value; });
+                            setState(() {
+                              _selectedTextBackground = value;
+                              if (value != 'কাস্টম') _useCustomTextColor = false;
+                            });
                           },
                         ),
                         IconButton(
