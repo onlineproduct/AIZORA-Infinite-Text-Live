@@ -8,6 +8,7 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter/material.dart';
+import 'scene_timeline.dart';
 
 class LetterFadeLoopText extends StatefulWidget {
   const LetterFadeLoopText({super.key, required this.text, required this.style});
@@ -118,11 +119,13 @@ void _backgroundServiceStart(ServiceInstance service) {
   // backgrounded. It does NOT encode or transmit Facebook Live video.
   final startedAt = DateTime.now();
   var running = true;
-  var textIndex = 0;
-  var backgroundIndex = 0;
+  final timeline = AizoraSceneTimeline(startedAt: startedAt);
   List<String> sceneTexts = const [];
   List<List<int>> sceneGradients = const [];
   void publishStatus() {
+    final now = DateTime.now();
+    final textIndex = timeline.textIndex(now, sceneTexts.length);
+    final backgroundIndex = timeline.backgroundIndex(now, sceneGradients.length);
     service.invoke('aizoraBackgroundStatus', {
       'status': 'scene_clock_running',
       'streaming': false,
@@ -147,20 +150,13 @@ void _backgroundServiceStart(ServiceInstance service) {
     }
     publishStatus();
   });
-  final textTimer = Timer.periodic(const Duration(seconds: 3), (_) {
-    if (!running) return;
-    textIndex++;
-    publishStatus();
-  });
-  final backgroundTimer = Timer.periodic(const Duration(seconds: 4), (_) {
-    if (!running) return;
-    backgroundIndex++;
-    publishStatus();
-  });
+  // A single wall-clock ticker catches up after timer suspension.
+  final statusTimer = Timer.periodic(
+    const Duration(seconds: 1), (_) => publishStatus(),
+  );
   service.on('stopAizoraBackgroundService').listen((_) {
     running = false;
-    textTimer.cancel();
-    backgroundTimer.cancel();
+    statusTimer.cancel();
     service.stopSelf();
   });
   service.on('aizoraStatus').listen((_) => publishStatus());
