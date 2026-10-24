@@ -270,6 +270,7 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
   int _backgroundIndex = 0;
   int _textIndex = 0;
 
+  DateTime _sceneEpoch = DateTime.now();
   Timer? _backgroundTimer;
   Timer? _textTimer;
   StreamSubscription<Map<String, dynamic>?>? _backgroundStatusSubscription;
@@ -303,24 +304,24 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
   }
 
   void _startTimers() {
-    _backgroundTimer ??= Timer.periodic(const Duration(seconds: 4), (_) {
-      if (!_isRunning) {
-        return;
+    // Wall-clock scheduling lets the preview catch up after Android pauses
+    // UI timers while the phone is locked or the app is backgrounded.
+    void refreshScene() {
+      if (!_isRunning || !mounted) return;
+      final elapsed = DateTime.now().difference(_sceneEpoch).inMilliseconds;
+      if (elapsed < 0) return;
+      final nextBackground = (elapsed ~/ 4000) % _activeBackgrounds.length;
+      final nextText = (elapsed ~/ 3000) % _texts.length;
+      if (nextBackground != _backgroundIndex || nextText != _textIndex) {
+        setState(() {
+          _backgroundIndex = nextBackground;
+          _textIndex = nextText;
+        });
       }
-      setState(() {
-        _backgroundIndex = (_backgroundIndex + 1) % _activeBackgrounds.length;
-      });
-    });
-
-    _textTimer ??= Timer.periodic(const Duration(seconds: 3), (_) {
-      if (!_isRunning) {
-        return;
-      }
-      setState(() {
-        _textIndex = (_textIndex + 1) % _texts.length;
-        // Keep the animation selected by the user.
-      });
-    });
+    }
+    _backgroundTimer ??= Timer.periodic(
+      const Duration(milliseconds: 250), (_) => refreshScene(),
+    );
   }
 
   Future<Color?> _chooseColor(String title, Color initialColor) async {
@@ -630,6 +631,7 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
     });
 
     if (_isRunning) {
+      _sceneEpoch = DateTime.now();
       _setStatus('Animation started.');
       if (_selectedMusicPath != null && !_isMusicPlaying) {
         _playSelectedMusic();
