@@ -157,6 +157,7 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
   String _selectedAnimation = 'Fade';
   String _selectedFontWeight = 'বোল্ড';
   String _selectedFontFamily = 'সাধারণ';
+  bool _showSettings = false;
   bool _italicText = false;
   double _textFontSize = 34;
   String _selectedTheme = 'নীল';
@@ -709,6 +710,16 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
                       ),
                     ),
                     const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () => setState(() => _showSettings = !_showSettings),
+                        icon: Icon(_showSettings ? Icons.expand_less : Icons.tune),
+                        label: Text(_showSettings ? 'সেটিংস বন্ধ করুন' : 'কাস্টমাইজ / সেটিংস'),
+                      ),
+                    ),
+                    if (_showSettings) ...[
+                    const SizedBox(height: 12),
                     Wrap(
                       spacing: 10,
                       runSpacing: 8,
@@ -876,6 +887,8 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
                           ],
                         ),
                       ),
+                    ],
+                    const SizedBox(height: 12),
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(16),
