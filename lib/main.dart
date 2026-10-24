@@ -279,15 +279,18 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
     super.initState();
     _audioPlayer.setReleaseMode(ReleaseMode.loop);
     _startTimers();
-    _backgroundStatusSubscription = FlutterBackgroundService()
-        .on('aizoraBackgroundStatus')
-        .listen((event) {
-      if (!mounted || event == null) return;
-      final uptime = event['uptimeSeconds'];
-      if (uptime is int) {
-        _setStatus('ব্যাকগ্রাউন্ড দৃশ্যের টাইমার চলছে: ${uptime}s। Facebook Live ভিডিও এখনো পাঠানো হচ্ছে না।');
-      }
-    });
+    // The plugin has no Linux/Windows implementation; widget tests run on Linux.
+    if (Platform.isAndroid || Platform.isIOS) {
+      _backgroundStatusSubscription = FlutterBackgroundService()
+          .on('aizoraBackgroundStatus')
+          .listen((event) {
+        if (!mounted || event == null) return;
+        final uptime = event['uptimeSeconds'];
+        if (uptime is int) {
+          _setStatus('ব্যাকগ্রাউন্ড দৃশ্যের টাইমার চলছে: ${uptime}s। Facebook Live ভিডিও এখনো পাঠানো হচ্ছে না।');
+        }
+      });
+    }
   }
 
   @override
