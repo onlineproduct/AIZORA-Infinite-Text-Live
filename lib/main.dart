@@ -113,6 +113,7 @@ Future<bool> _backgroundServiceIosBackground(ServiceInstance service) async {
 
 @pragma('vm:entry-point')
 void _backgroundServiceStart(ServiceInstance service) {
+  DartPluginRegistrant.ensureInitialized();
   service.on('stopAizoraBackgroundService').listen((_) {
     service.stopSelf();
   });
