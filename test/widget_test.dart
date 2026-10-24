@@ -17,7 +17,12 @@ void main() {
   testWidgets('Animation can still be stopped and restarted', (tester) async {
     await tester.pumpWidget(const AizoraApp());
 
-    await tester.ensureVisible(find.text('Stop Animation'));
+    await tester.scrollUntilVisible(
+      find.text('Stop Animation'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+      alignment: 0.5,
+    );
     await tester.pumpAndSettle();
     await tester.tap(find.text('Stop Animation'));
     await tester.pump();
