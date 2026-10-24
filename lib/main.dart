@@ -157,6 +157,7 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
   String _selectedAnimation = 'Fade';
   String _selectedFontWeight = 'বোল্ড';
   String _selectedFontFamily = 'সাধারণ';
+  bool _showSettings = false;
   bool _italicText = false;
   double _textFontSize = 34;
   String _selectedTheme = 'নীল';
@@ -167,6 +168,9 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
   Color _customTextColor = Colors.white;
   Color _customBoxColor = const Color(0xFF000000);
   bool _useCustomTextColor = false;
+  bool _textBorderEnabled = true;
+  double _textBorderWidth = 2.0;
+  Color _textBorderColor = Colors.black;
 
   List<List<Color>> get _activeBackgrounds => _selectedTheme == 'কাস্টম'
       ? [
@@ -330,7 +334,10 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
                     _customBoxColor = picked;
                     _selectedTextBackground = 'কাস্টম';
                   }
-                  _selectedTheme = 'কাস্টম';
+                  if (label == 'ব্যাকগ্রাউন্ডের প্রথম রং' ||
+                      label == 'ব্যাকগ্রাউন্ডের দ্বিতীয় রং') {
+                    _selectedTheme = 'কাস্টম';
+                  }
                 });
                 setDialogState(() {});
               },
@@ -524,6 +531,18 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
         _ => null,
       },
       color: _activeTextColor,
+      shadows: _textBorderEnabled
+          ? [
+              Shadow(color: _textBorderColor, offset: Offset(-_textBorderWidth, 0)),
+              Shadow(color: _textBorderColor, offset: Offset(_textBorderWidth, 0)),
+              Shadow(color: _textBorderColor, offset: Offset(0, -_textBorderWidth)),
+              Shadow(color: _textBorderColor, offset: Offset(0, _textBorderWidth)),
+              Shadow(color: _textBorderColor, offset: Offset(-_textBorderWidth, -_textBorderWidth)),
+              Shadow(color: _textBorderColor, offset: Offset(_textBorderWidth, -_textBorderWidth)),
+              Shadow(color: _textBorderColor, offset: Offset(-_textBorderWidth, _textBorderWidth)),
+              Shadow(color: _textBorderColor, offset: Offset(_textBorderWidth, _textBorderWidth)),
+            ]
+          : null,
       letterSpacing: 1.2,
       height: 1.2,
     );
@@ -691,6 +710,16 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
                       ),
                     ),
                     const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () => setState(() => _showSettings = !_showSettings),
+                        icon: Icon(_showSettings ? Icons.expand_less : Icons.tune),
+                        label: Text(_showSettings ? 'সেটিংস বন্ধ করুন' : 'কাস্টমাইজ / সেটিংস'),
+                      ),
+                    ),
+                    if (_showSettings) ...[
+                    const SizedBox(height: 12),
                     Wrap(
                       spacing: 10,
                       runSpacing: 8,
@@ -755,7 +784,6 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
                             if (value == null) return;
                             setState(() {
                               _selectedTextBackground = value;
-                              if (value != 'কাস্টম') _useCustomTextColor = false;
                             });
                           },
                         ),
@@ -789,6 +817,53 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
                         Text(_textFontSize.round().toString()),
                       ],
                     ),
+                    Row(
+                      children: [
+                        const Icon(Icons.border_color_outlined),
+                        const SizedBox(width: 8),
+                        const Text('টেক্সট বর্ডার'),
+                        Switch(
+                          value: _textBorderEnabled,
+                          onChanged: (value) => setState(() => _textBorderEnabled = value),
+                        ),
+                        IconButton(
+                          tooltip: 'বর্ডারের রং কাস্টমাইজ করুন',
+                          onPressed: _textBorderEnabled
+                              ? () async {
+                                  final picked = await _chooseColor(
+                                    'টেক্সট বর্ডারের রং',
+                                    _textBorderColor,
+                                  );
+                                  if (picked != null && mounted) {
+                                    setState(() => _textBorderColor = picked);
+                                  }
+                                }
+                              : null,
+                          icon: Container(
+                            width: 22,
+                            height: 22,
+                            decoration: BoxDecoration(
+                              color: _textBorderColor,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white, width: 1.5),
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          child: Slider(
+                            value: _textBorderWidth,
+                            min: 0.5,
+                            max: 4.0,
+                            divisions: 7,
+                            label: _textBorderWidth.toStringAsFixed(1),
+                            onChanged: _textBorderEnabled
+                                ? (value) => setState(() => _textBorderWidth = value)
+                                : null,
+                          ),
+                        ),
+                        Text(_textBorderWidth.toStringAsFixed(1)),
+                      ],
+                    ),
                     const SizedBox(height: 8),
                     if (_selectedTextBackground != 'বক্স নেই')
                       Padding(
@@ -812,6 +887,8 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
                           ],
                         ),
                       ),
+                    ],
+                    const SizedBox(height: 12),
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(16),

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:aizora_infinite_text_live/main.dart';
 
@@ -20,13 +20,16 @@ void main() {
 
     await tester.scrollUntilVisible(
       find.text('Stop Animation'),
-      250,
+      300,
       scrollable: find.byType(Scrollable).first,
     );
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Stop Animation'));
     await tester.pump();
     expect(find.text('Start Animation'), findsOneWidget);
 
+    await tester.ensureVisible(find.text('Start Animation'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Start Animation'));
     await tester.pump();
     expect(find.text('Stop Animation'), findsOneWidget);
