@@ -1169,7 +1169,7 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
                                 child: ElevatedButton.icon(
                                   onPressed: _toggleRun,
                                   icon: Icon(_isRunning ? Icons.stop : Icons.play_arrow),
-                                  label: Text(_isRunning ? 'Stop Animation' : 'Start Animation'),
+                                  label: FittedBox(fit: BoxFit.scaleDown, child: Text(_isRunning ? 'Stop Animation' : 'Start Animation', maxLines: 1, softWrap: false)),
                                 ),
                               ),
                               const SizedBox(width: 12),
@@ -1177,7 +1177,7 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
                                 child: ElevatedButton.icon(
                                   onPressed: _pickMusic,
                                   icon: const Icon(Icons.audiotrack),
-                                  label: const Text('Select Music'),
+                                  label: const FittedBox(fit: BoxFit.scaleDown, child: Text('Select Music', maxLines: 1, softWrap: false)),
                                 ),
                               ),
                             ],
@@ -1189,7 +1189,7 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
                                 child: ElevatedButton.icon(
                                   onPressed: _toggleMusic,
                                   icon: Icon(_isMusicPlaying ? Icons.pause : Icons.play_arrow),
-                                  label: Text(_isMusicPlaying ? 'Pause Music' : 'Play Music'),
+                                  label: FittedBox(fit: BoxFit.scaleDown, child: Text(_isMusicPlaying ? 'Pause Music' : 'Play Music', maxLines: 1, softWrap: false)),
                                 ),
                               ),
                               const SizedBox(width: 12),
@@ -1215,7 +1215,7 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
                             child: OutlinedButton.icon(
                               onPressed: _configureFacebookLive,
                               icon: const Icon(Icons.wifi_tethering),
-                              label: Text(_rtmpsStreamKey == null ? 'Facebook Live সেটআপ' : 'Facebook Live তথ্য সেট করা আছে'),
+                              label: Flexible(child: FittedBox(fit: BoxFit.scaleDown, child: Text(_rtmpsStreamKey == null ? 'Facebook Live সেটআপ' : 'Facebook Live তথ্য সেট করা আছে', maxLines: 1, softWrap: false))),
                               style: OutlinedButton.styleFrom(
                                 padding: const EdgeInsets.symmetric(vertical: 14),
                                 foregroundColor: Colors.white,
@@ -1229,7 +1229,7 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
                             child: OutlinedButton.icon(
                               onPressed: _checkFacebookServer,
                               icon: const Icon(Icons.network_check),
-                              label: const Text('Facebook RTMPS সার্ভার সংযোগ পরীক্ষা'),
+                              label: const Flexible(child: FittedBox(fit: BoxFit.scaleDown, child: Text('Facebook RTMPS সার্ভার সংযোগ পরীক্ষা', maxLines: 1, softWrap: false))),
                             ),
                           ),
                           const SizedBox(height: 12),
@@ -1239,7 +1239,7 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
                                 child: OutlinedButton.icon(
                                   onPressed: _startBackgroundService,
                                   icon: const Icon(Icons.play_circle_outline),
-                                  label: const Text('ব্যাকগ্রাউন্ড সার্ভিস চালু'),
+                                  label: const Flexible(child: FittedBox(fit: BoxFit.scaleDown, child: Text('ব্যাকগ্রাউন্ড সার্ভিস চালু', maxLines: 1, softWrap: false))),
                                 ),
                               ),
                               const SizedBox(width: 8),
@@ -1247,7 +1247,7 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
                                 child: OutlinedButton.icon(
                                   onPressed: _stopBackgroundService,
                                   icon: const Icon(Icons.stop_circle_outlined),
-                                  label: const Text('সার্ভিস বন্ধ'),
+                                  label: const Flexible(child: FittedBox(fit: BoxFit.scaleDown, child: Text('সার্ভিস বন্ধ', maxLines: 1, softWrap: false))),
                                 ),
                               ),
                             ],
