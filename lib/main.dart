@@ -488,6 +488,33 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
     }
   }
 
+  Future<void> _startBackgroundService() async {
+    try {
+      final service = FlutterBackgroundService();
+      await service.startService();
+      if (!mounted) return;
+      setState(() {
+        _statusMessage = 'ব্যাকগ্রাউন্ড সার্ভিস চালুর অনুরোধ পাঠানো হয়েছে। এটি এখনো Facebook-এ স্ট্রিম করছে না।';
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _statusMessage = 'ব্যাকগ্রাউন্ড সার্ভিস চালু করা যায়নি: $error');
+    }
+  }
+
+  Future<void> _stopBackgroundService() async {
+    try {
+      FlutterBackgroundService().invoke('stopAizoraBackgroundService');
+      if (!mounted) return;
+      setState(() {
+        _statusMessage = 'ব্যাকগ্রাউন্ড সার্ভিস বন্ধ করার অনুরোধ পাঠানো হয়েছে।';
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _statusMessage = 'সার্ভিস বন্ধ করা যায়নি: $error');
+    }
+  }
+
   Future<void> _checkBroadcastFrames() async {
     if (!mounted) return;
     try {
@@ -1103,6 +1130,32 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
                                 side: const BorderSide(color: Colors.white54),
                               ),
                             ),
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  onPressed: _startBackgroundService,
+                                  icon: const Icon(Icons.play_circle_outline),
+                                  label: const Text('ব্যাকগ্রাউন্ড সার্ভিস চালু'),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  onPressed: _stopBackgroundService,
+                                  icon: const Icon(Icons.stop_circle_outlined),
+                                  label: const Text('সার্ভিস বন্ধ'),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          const Text(
+                            'এটি শুধু ব্যাকগ্রাউন্ড সার্ভিস পরীক্ষা করে; Facebook Live সম্প্রচার চালু করে না।',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: Colors.amberAccent, fontSize: 12),
                           ),
                           const SizedBox(height: 12),
                           Text(
