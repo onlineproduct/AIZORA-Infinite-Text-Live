@@ -72,7 +72,7 @@ jobs:
                           if node.get(android + "name") == service_name), None)
           if service is None:
               service = ET.SubElement(app, "service", {android + "name": service_name})
-          service.set(android + "exported", "false")
+          # Let the plugin manifest define android:exported to avoid a manifest-merger conflict.
           service.set(android + "foregroundServiceType", "mediaPlayback")
           tree.write(manifest, encoding="utf-8", xml_declaration=True)
           print("Configured Android media foreground-service permissions and type")
