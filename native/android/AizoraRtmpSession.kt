@@ -37,21 +37,21 @@ internal class AizoraRtmpSession : Closeable {
             val commands = AizoraPublishCommands(application.ifBlank { app }, fullTcUrl, streamKey)
             wire.writeMessage(20, 0, commands.connect())
             val connectResponse = nextCommand()
-            check(connectResponse.contains("_result") || connectResponse.contains("_error")) {
-                "Unexpected RTMP connect response"
+            check(connectResponse.name == "_result") {
+                if (connectResponse.name == "_error") "RTMP connect rejected by server"
+                else "Unexpected RTMP connect response: ${connectResponse.name}"
             }
-            check(!connectResponse.contains("_error")) { "RTMP connect rejected by server" }
 
             wire.writeMessage(20, 0, commands.createStream())
             val createResponse = nextCommand()
-            check(createResponse.contains("_result")) { "RTMP createStream failed" }
-            streamId = extractStreamId(createResponse)
+            check(createResponse.name == "_result") { "RTMP createStream failed: ${createResponse.name}" }
+            streamId = createResponse.arguments.filterIsInstance<Number>().lastOrNull()?.toInt() ?: 0
             check(streamId > 0) { "Server returned no valid stream ID" }
 
             wire.writeMessage(20, streamId, commands.publish())
             val publishResponse = nextCommand()
-            check(publishResponse.contains("NetStream.Publish.Start")) {
-                "Server did not confirm publish start"
+            check(AizoraAmf0Reader.findString(publishResponse.arguments, "NetStream.Publish.Start")) {
+                "Server did not confirm publish start: ${publishResponse.name}"
             }
         } catch (error: Exception) {
             close()
@@ -67,31 +67,21 @@ internal class AizoraRtmpSession : Closeable {
         checkNotNull(transport).writeMessage(9, streamId, flvAvcPayload, timestampMs)
     }
 
-    private fun nextCommand(): String {
+    private fun nextCommand(): AizoraAmf0Reader.Command {
         val source = checkNotNull(reader)
         repeat(200) {
             val message = source.read()
             if (message.type == 20 || message.type == 17) {
-                val text = String(message.payload, Charsets.ISO_8859_1)
-                if (text.contains("_result") || text.contains("_error") ||
-                    text.contains("NetStream.Publish.Start") ||
-                    text.contains("NetStream.Publish.BadName")) return text
-            }
-            if (message.type == 4 && message.payload.isNotEmpty()) {
-                // RTMP user-control events are not command replies; ignore.
+                val payload = if (message.type == 17 && message.payload.isNotEmpty() &&
+                    message.payload[0].toInt() == 0) message.payload.copyOfRange(1, message.payload.size)
+                    else message.payload
+                val command = runCatching { AizoraAmf0Reader.command(payload) }.getOrNull()
+                if (command != null && (command.name == "_result" || command.name == "_error" ||
+                    AizoraAmf0Reader.findString(command.arguments, "NetStream.Publish.Start") ||
+                    AizoraAmf0Reader.findString(command.arguments, "NetStream.Publish.BadName"))) return command
             }
         }
         throw java.net.SocketTimeoutException("No RTMP command response")
-    }
-
-    /**
-     * Minimal AMF0 numeric search used only as a defensive preliminary parser.
-     * Production implementation should parse AMF values structurally.
-     */
-    private fun extractStreamId(response: String): Int {
-        val match = Regex("_result.{0,80}?([0-9]+(?:\\.[0-9]+)?)").find(response)
-            ?: return 0
-        return match.groupValues[1].toDoubleOrNull()?.toInt() ?: 0
     }
 
     override fun close() {
