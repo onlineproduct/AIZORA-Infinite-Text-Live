@@ -333,7 +333,10 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
                     _customBoxColor = picked;
                     _selectedTextBackground = 'কাস্টম';
                   }
-                  _selectedTheme = 'কাস্টম';
+                  if (label == 'ব্যাকগ্রাউন্ডের প্রথম রং' ||
+                      label == 'ব্যাকগ্রাউন্ডের দ্বিতীয় রং') {
+                    _selectedTheme = 'কাস্টম';
+                  }
                 });
                 setDialogState(() {});
               },
@@ -770,7 +773,6 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
                             if (value == null) return;
                             setState(() {
                               _selectedTextBackground = value;
-                              if (value != 'কাস্টম') _useCustomTextColor = false;
                             });
                           },
                         ),
