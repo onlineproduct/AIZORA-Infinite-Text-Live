@@ -1,3 +1,4 @@
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:aizora_infinite_text_live/main.dart';
 
@@ -21,7 +22,6 @@ void main() {
       find.text('Stop Animation'),
       300,
       scrollable: find.byType(Scrollable).first,
-      alignment: 0.5,
     );
     await tester.pumpAndSettle();
     await tester.tap(find.text('Stop Animation'));
