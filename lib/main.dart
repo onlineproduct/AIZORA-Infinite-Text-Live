@@ -562,12 +562,15 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
   Future<void> _startBackgroundService() async {
     try {
       final service = FlutterBackgroundService();
-      await service.startService();
-      service.invoke('aizoraStatus');
+      final started = await service.startService();
+      final running = await service.isRunning();
       if (!mounted) return;
-      setState(() {
-        _statusMessage = 'ব্যাকগ্রাউন্ড দৃশ্যের টাইমার চালুর অনুরোধ পাঠানো হয়েছে। এটি Facebook-এ ভিডিও স্ট্রিম করছে না।';
-      });
+      if (!started || !running) {
+        _setStatus('ব্যাকগ্রাউন্ড সার্ভিস চালু হয়নি। ফোনের অনুমতি ও নোটিফিকেশন পরীক্ষা করুন।');
+        return;
+      }
+      service.invoke('aizoraStatus');
+      _setStatus('ব্যাকগ্রাউন্ড সার্ভিস চলছে (যাচাইকৃত)। Facebook Live ভিডিও এখনো পাঠানো হচ্ছে না।');
     } catch (error) {
       if (!mounted) return;
       setState(() => _statusMessage = 'ব্যাকগ্রাউন্ড সার্ভিস চালু করা যায়নি: $error');
