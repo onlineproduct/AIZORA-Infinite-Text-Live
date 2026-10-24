@@ -415,7 +415,7 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
             FilledButton(
               onPressed: () {
                 final uri = Uri.tryParse(serverController.text.trim());
-                if (uri?.scheme != 'rtmps' || uri?.host.isEmpty ||
+                if (uri?.scheme != 'rtmps' || (uri?.host.isEmpty ?? true) ||
                     keyController.text.trim().isEmpty) {
                   ScaffoldMessenger.of(dialogContext).showSnackBar(
                     const SnackBar(content: Text('সঠিক RTMPS URL ও Stream Key দিন')),
