@@ -1,5 +1,8 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:ui' as ui;
+
+import 'package:flutter/rendering.dart';
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:file_picker/file_picker.dart';
@@ -443,6 +446,31 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
     }
   }
 
+  Future<void> _checkBroadcastFrames() async {
+    if (!mounted) return;
+    try {
+      await WidgetsBinding.instance.endOfFrame;
+      final context = _broadcastSceneKey.currentContext;
+      final boundary = context?.findRenderObject();
+      if (boundary is! RenderRepaintBoundary) {
+        _setStatus('লাইভ দৃশ্য এখনো প্রস্তুত নয়।');
+        return;
+      }
+      final ui.Image image = await boundary.toImage(pixelRatio: 1.0);
+      try {
+        final data = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
+        if (!mounted) return;
+        _setStatus(data == null
+            ? 'ভিডিও ফ্রেম পাওয়া যায়নি।'
+            : 'ভিডিও দৃশ্য প্রস্তুত: ${image.width} × ${image.height}। RTMPS ভিডিও পাঠানো এখনো বাকি।');
+      } finally {
+        image.dispose();
+      }
+    } catch (_) {
+      if (mounted) _setStatus('ভিডিও ফ্রেম পরীক্ষা ব্যর্থ হয়েছে।');
+    }
+  }
+
   void _setStatus(String value) {
     setState(() {
       _statusMessage = value;
@@ -788,6 +816,11 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
                         icon: Icon(_showSettings ? Icons.expand_less : Icons.tune),
                         label: Text(_showSettings ? 'সেটিংস বন্ধ করুন' : 'কাস্টমাইজ / সেটিংস'),
                       ),
+                    ),
+                    TextButton.icon(
+                      onPressed: _checkBroadcastFrames,
+                      icon: const Icon(Icons.video_settings_outlined),
+                      label: const Text('লাইভ ভিডিও ফ্রেম পরীক্ষা'),
                     ),
                     if (_showSettings) ...[
                     const SizedBox(height: 12),
