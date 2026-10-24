@@ -44,6 +44,7 @@ jobs:
           TARGET="android/app/src/main/kotlin/com/example/aizora_infinite_text_live"
           mkdir -p "$TARGET"
           cp native/android/AizoraH264Encoder.kt "$TARGET/AizoraH264Encoder.kt"
+          cp native/android/AizoraRtmpsTransport.kt "$TARGET/AizoraRtmpsTransport.kt"
 
       - name: Configure foreground media service permissions
         run: |
