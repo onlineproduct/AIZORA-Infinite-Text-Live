@@ -110,6 +110,9 @@ class AizoraHomePage extends StatefulWidget {
 
 class _AizoraHomePageState extends State<AizoraHomePage> {
   final AudioPlayer _audioPlayer = AudioPlayer();
+  final GlobalKey _broadcastSceneKey = GlobalKey();
+  String? _rtmpsServer;
+  String? _rtmpsStreamKey;
 
   final Map<String, List<List<Color>>> _themePalettes = {
     'নীল': [
@@ -373,6 +376,71 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
         },
       ),
     );
+  }
+
+  Future<void> _configureFacebookLive() async {
+    final serverController = TextEditingController(
+      text: _rtmpsServer ?? 'rtmps://live-api-s.facebook.com:443/rtmp/',
+    );
+    final keyController = TextEditingController();
+    try {
+      final saved = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Facebook Live সংযোগ'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('Facebook Live Producer থেকে Server URL ও Stream Key নিন। এই তথ্য অ্যাপে স্থায়ীভাবে সংরক্ষণ করা হবে না।'),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: serverController,
+                  keyboardType: TextInputType.url,
+                  decoration: const InputDecoration(labelText: 'RTMPS Server URL'),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: keyController,
+                  obscureText: true,
+                  autocorrect: false,
+                  enableSuggestions: false,
+                  decoration: const InputDecoration(labelText: 'Stream Key (গোপন)'),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('বাতিল')),
+            FilledButton(
+              onPressed: () {
+                final uri = Uri.tryParse(serverController.text.trim());
+                if (uri?.scheme != 'rtmps' || uri?.host.isEmpty ||
+                    keyController.text.trim().isEmpty) {
+                  ScaffoldMessenger.of(dialogContext).showSnackBar(
+                    const SnackBar(content: Text('সঠিক RTMPS URL ও Stream Key দিন')),
+                  );
+                  return;
+                }
+                Navigator.pop(dialogContext, true);
+              },
+              child: const Text('সংযোগ তথ্য সেট করুন'),
+            ),
+          ],
+        ),
+      );
+      if (saved == true && mounted) {
+        setState(() {
+          _rtmpsServer = serverController.text.trim();
+          _rtmpsStreamKey = keyController.text.trim();
+          _statusMessage = 'সংযোগ তথ্য সেট হয়েছে। ভিডিও এনকোডার/RTMPS সম্প্রচার এখনো সংযুক্ত নয়।';
+        });
+      }
+    } finally {
+      // Controllers and credentials are scoped to this screen session only.
+      serverController.dispose();
+      keyController.dispose();
+    }
   }
 
   void _setStatus(String value) {
@@ -683,7 +751,9 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
                     const SizedBox(height: 12),
                     SizedBox(
                       height: isWide ? 420 : constraints.maxHeight * 0.34,
-                      child: Center(
+                      child: RepaintBoundary(
+                        key: _broadcastSceneKey,
+                        child: Center(
                         child: Padding(
                           padding: EdgeInsets.symmetric(horizontal: isWide ? 80 : 20),
                           child: Container(
@@ -706,6 +776,7 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
                             ),
                             child: _buildAnimatedText(),
                           ),
+                        ),
                         ),
                       ),
                     ),
@@ -948,9 +1019,9 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
                           SizedBox(
                             width: double.infinity,
                             child: OutlinedButton.icon(
-                              onPressed: () => _setStatus('Facebook Live is not connected yet. Streaming pipeline is the next development stage.'),
+                              onPressed: _configureFacebookLive,
                               icon: const Icon(Icons.wifi_tethering),
-                              label: const Text('Facebook Live শুরু করুন'),
+                              label: Text(_rtmpsStreamKey == null ? 'Facebook Live সেটআপ' : 'Facebook Live তথ্য সেট করা আছে'),
                               style: OutlinedButton.styleFrom(
                                 padding: const EdgeInsets.symmetric(vertical: 14),
                                 foregroundColor: Colors.white,
