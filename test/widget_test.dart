@@ -1,12 +1,11 @@
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:aizora_infinite_text_live/main.dart';
 
 void main() {
-  testWidgets('AIZORA automatically changes text every three seconds', (tester) async {
+  testWidgets('Animated scene changes text every three seconds', (tester) async {
     await tester.pumpWidget(const AizoraApp());
 
-    expect(find.text('AIZORA'), findsOneWidget);
     expect(find.text('ভালোবাসা মানে একে অপরের পাশে থাকা।'), findsOneWidget);
 
     await tester.pump(const Duration(seconds: 3));
@@ -15,23 +14,27 @@ void main() {
     expect(find.text('তোমার হাসিতে আমার পৃথিবী সুন্দর।'), findsOneWidget);
   });
 
-  testWidgets('Animation can still be stopped and restarted', (tester) async {
+  testWidgets('Animation can be paused and resumed from settings', (tester) async {
     await tester.pumpWidget(const AizoraApp());
 
-    await tester.scrollUntilVisible(
-      find.text('Stop Animation'),
-      300,
-      scrollable: find.byType(Scrollable).first,
-    );
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Stop Animation'));
+    await tester.tap(find.text('Show settings'));
     await tester.pump();
-    expect(find.text('Start Animation'), findsOneWidget);
 
-    await tester.ensureVisible(find.text('Start Animation'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Start Animation'));
+    expect(find.text('Pause animation'), findsOneWidget);
+    await tester.tap(find.text('Pause animation'));
     await tester.pump();
-    expect(find.text('Stop Animation'), findsOneWidget);
+
+    expect(find.text('Resume animation'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pump();
+    expect(find.text('ভালোবাসা মানে একে অপরের পাশে থাকা।'), findsOneWidget);
+
+    await tester.tap(find.text('Resume animation'));
+    await tester.pump();
+    expect(find.text('Pause animation'), findsOneWidget);
+
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pump();
+    expect(find.text('তোমার হাসিতে আমার পৃথিবী সুন্দর।'), findsOneWidget);
   });
 }
