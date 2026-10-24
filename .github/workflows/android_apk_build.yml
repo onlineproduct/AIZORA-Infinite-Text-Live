@@ -39,6 +39,12 @@ jobs:
               --org com.example
           fi
 
+      - name: Install native offscreen H264 encoder source
+        run: |
+          TARGET="android/app/src/main/kotlin/com/example/aizora_infinite_text_live"
+          mkdir -p "$TARGET"
+          cp native/android/AizoraH264Encoder.kt "$TARGET/AizoraH264Encoder.kt"
+
       - name: Configure foreground media service permissions
         run: |
           python3 - <<'PY'
