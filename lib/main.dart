@@ -122,6 +122,18 @@ void _backgroundServiceStart(ServiceInstance service) {
   var backgroundIndex = 0;
   List<String> sceneTexts = const [];
   List<List<int>> sceneGradients = const [];
+  void publishStatus() {
+    service.invoke('aizoraBackgroundStatus', {
+      'status': 'scene_clock_running',
+      'streaming': false,
+      'textIndex': textIndex,
+      'backgroundIndex': backgroundIndex,
+      'currentText': sceneTexts.isEmpty ? '' : sceneTexts[textIndex % sceneTexts.length],
+      'currentGradient': sceneGradients.isEmpty ? <int>[] : sceneGradients[backgroundIndex % sceneGradients.length],
+      'uptimeSeconds': DateTime.now().difference(startedAt).inSeconds,
+    });
+  }
+
   service.on('aizoraSceneConfig').listen((event) {
     final rawTexts = event?['texts'];
     final rawGradients = event?['gradients'];
@@ -135,18 +147,6 @@ void _backgroundServiceStart(ServiceInstance service) {
     }
     publishStatus();
   });
-  void publishStatus() {
-    service.invoke('aizoraBackgroundStatus', {
-      'status': 'scene_clock_running',
-      'streaming': false,
-      'textIndex': textIndex,
-      'backgroundIndex': backgroundIndex,
-      'currentText': sceneTexts.isEmpty ? '' : sceneTexts[textIndex % sceneTexts.length],
-      'currentGradient': sceneGradients.isEmpty ? <int>[] : sceneGradients[backgroundIndex % sceneGradients.length],
-      'uptimeSeconds': DateTime.now().difference(startedAt).inSeconds,
-    });
-  }
-
   final textTimer = Timer.periodic(const Duration(seconds: 3), (_) {
     if (!running) return;
     textIndex++;
