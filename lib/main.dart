@@ -114,15 +114,40 @@ Future<bool> _backgroundServiceIosBackground(ServiceInstance service) async {
 @pragma('vm:entry-point')
 void _backgroundServiceStart(ServiceInstance service) {
   ui.DartPluginRegistrant.ensureInitialized();
+  // This isolate keeps an independent scene timeline while the Activity is
+  // backgrounded. It does NOT encode or transmit Facebook Live video.
+  final startedAt = DateTime.now();
+  var running = true;
+  var textIndex = 0;
+  var backgroundIndex = 0;
+  void publishStatus() {
+    service.invoke('aizoraBackgroundStatus', {
+      'status': 'scene_clock_running',
+      'streaming': false,
+      'textIndex': textIndex,
+      'backgroundIndex': backgroundIndex,
+      'uptimeSeconds': DateTime.now().difference(startedAt).inSeconds,
+    });
+  }
+
+  final textTimer = Timer.periodic(const Duration(seconds: 3), (_) {
+    if (!running) return;
+    textIndex++;
+    publishStatus();
+  });
+  final backgroundTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+    if (!running) return;
+    backgroundIndex++;
+    publishStatus();
+  });
   service.on('stopAizoraBackgroundService').listen((_) {
+    running = false;
+    textTimer.cancel();
+    backgroundTimer.cancel();
     service.stopSelf();
   });
-  service.on('aizoraStatus').listen((_) {
-    service.invoke('aizoraBackgroundStatus', {
-      'status': 'foreground_service_running',
-      'streaming': false,
-    });
-  });
+  service.on('aizoraStatus').listen((_) => publishStatus());
+  publishStatus();
 }
 
 class AizoraApp extends StatelessWidget {
@@ -247,18 +272,29 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
 
   Timer? _backgroundTimer;
   Timer? _textTimer;
+  StreamSubscription<Map<String, dynamic>?>? _backgroundStatusSubscription;
 
   @override
   void initState() {
     super.initState();
     _audioPlayer.setReleaseMode(ReleaseMode.loop);
     _startTimers();
+    _backgroundStatusSubscription = FlutterBackgroundService()
+        .on('aizoraBackgroundStatus')
+        .listen((event) {
+      if (!mounted || event == null) return;
+      final uptime = event['uptimeSeconds'];
+      if (uptime is int) {
+        _setStatus('ব্যাকগ্রাউন্ড দৃশ্যের টাইমার চলছে: ${uptime}s। Facebook Live ভিডিও এখনো পাঠানো হচ্ছে না।');
+      }
+    });
   }
 
   @override
   void dispose() {
     _backgroundTimer?.cancel();
     _textTimer?.cancel();
+    _backgroundStatusSubscription?.cancel();
     _audioPlayer.dispose();
     super.dispose();
   }
@@ -530,9 +566,10 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
     try {
       final service = FlutterBackgroundService();
       await service.startService();
+      service.invoke('aizoraStatus');
       if (!mounted) return;
       setState(() {
-        _statusMessage = 'ব্যাকগ্রাউন্ড সার্ভিস চালুর অনুরোধ পাঠানো হয়েছে। এটি এখনো Facebook-এ স্ট্রিম করছে না।';
+        _statusMessage = 'ব্যাকগ্রাউন্ড দৃশ্যের টাইমার চালুর অনুরোধ পাঠানো হয়েছে। এটি Facebook-এ ভিডিও স্ট্রিম করছে না।';
       });
     } catch (error) {
       if (!mounted) return;
@@ -1200,7 +1237,7 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
                           ),
                           const SizedBox(height: 6),
                           const Text(
-                            'এটি শুধু ব্যাকগ্রাউন্ড সার্ভিস পরীক্ষা করে; Facebook Live সম্প্রচার চালু করে না।',
+                            'স্ক্রিন বন্ধ থাকলেও আলাদা সার্ভিসে দৃশ্যের টাইমার চলার ব্যবস্থা; ভিডিও এনকোডিং/ Facebook Live সম্প্রচার এখনো নেই।',
                             textAlign: TextAlign.center,
                             style: TextStyle(color: Colors.amberAccent, fontSize: 12),
                           ),
