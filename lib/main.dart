@@ -120,12 +120,29 @@ void _backgroundServiceStart(ServiceInstance service) {
   var running = true;
   var textIndex = 0;
   var backgroundIndex = 0;
+  List<String> sceneTexts = const [];
+  List<List<int>> sceneGradients = const [];
+  service.on('aizoraSceneConfig').listen((event) {
+    final rawTexts = event?['texts'];
+    final rawGradients = event?['gradients'];
+    if (rawTexts is List) {
+      sceneTexts = rawTexts.whereType<String>().take(100).toList();
+    }
+    if (rawGradients is List) {
+      sceneGradients = rawGradients.whereType<List>().map(
+        (gradient) => gradient.whereType<int>().take(2).toList(),
+      ).where((gradient) => gradient.length == 2).take(30).toList();
+    }
+    publishStatus();
+  });
   void publishStatus() {
     service.invoke('aizoraBackgroundStatus', {
       'status': 'scene_clock_running',
       'streaming': false,
       'textIndex': textIndex,
       'backgroundIndex': backgroundIndex,
+      'currentText': sceneTexts.isEmpty ? '' : sceneTexts[textIndex % sceneTexts.length],
+      'currentGradient': sceneGradients.isEmpty ? <int>[] : sceneGradients[backgroundIndex % sceneGradients.length],
       'uptimeSeconds': DateTime.now().difference(startedAt).inSeconds,
     });
   }
@@ -569,6 +586,12 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
         _setStatus('ব্যাকগ্রাউন্ড সার্ভিস চালু হয়নি। ফোনের অনুমতি ও নোটিফিকেশন পরীক্ষা করুন।');
         return;
       }
+      service.invoke('aizoraSceneConfig', {
+        'texts': _texts,
+        'gradients': _activeBackgrounds
+            .map((pair) => pair.map((color) => color.toARGB32()).toList())
+            .toList(),
+      });
       service.invoke('aizoraStatus');
       _setStatus('ব্যাকগ্রাউন্ড সার্ভিস চলছে (যাচাইকৃত)। Facebook Live ভিডিও এখনো পাঠানো হচ্ছে না।');
     } catch (error) {
