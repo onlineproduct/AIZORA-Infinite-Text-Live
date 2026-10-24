@@ -489,6 +489,43 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
     }
   }
 
+  // Connectivity preflight only. No stream key is sent, and a successful TLS
+  // handshake does not imply that Facebook accepted a live video stream.
+  Future<void> _checkFacebookServer() async {
+    final server = _rtmpsServer;
+    if (server == null || _rtmpsStreamKey == null) {
+      _setStatus('আগে Facebook Live সেটআপে Server URL ও Stream Key দিন।');
+      return;
+    }
+    final uri = Uri.tryParse(server);
+    if (uri == null || uri.scheme != 'rtmps' || uri.host.isEmpty ||
+        uri.userInfo.isNotEmpty || uri.hasQuery || uri.hasFragment) {
+      _setStatus('RTMPS Server URL সঠিক নয়।');
+      return;
+    }
+    _setStatus('Facebook RTMPS সার্ভারের TLS সংযোগ পরীক্ষা হচ্ছে…');
+    SecureSocket? socket;
+    try {
+      socket = await SecureSocket.connect(
+        uri.host,
+        uri.hasPort ? uri.port : 443,
+        timeout: const Duration(seconds: 8),
+      );
+      if (!mounted) return;
+      _setStatus('TLS সার্ভার সংযোগ সফল। ভিডিও সম্প্রচার/Stream Key যাচাই এখনো হয়নি।');
+    } on SocketException {
+      if (mounted) _setStatus('সার্ভারে সংযোগ হয়নি। ইন্টারনেট ও RTMPS URL যাচাই করুন।');
+    } on HandshakeException {
+      if (mounted) _setStatus('TLS নিরাপত্তা যাচাই ব্যর্থ। সার্ভার ঠিকানা পরীক্ষা করুন।');
+    } on TimeoutException {
+      if (mounted) _setStatus('সার্ভার সংযোগের সময় শেষ হয়েছে।');
+    } catch (_) {
+      if (mounted) _setStatus('RTMPS সংযোগ পরীক্ষা ব্যর্থ হয়েছে।');
+    } finally {
+      socket?.destroy();
+    }
+  }
+
   Future<void> _startBackgroundService() async {
     try {
       final service = FlutterBackgroundService();
@@ -1130,6 +1167,15 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
                                 foregroundColor: Colors.white,
                                 side: const BorderSide(color: Colors.white54),
                               ),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton.icon(
+                              onPressed: _checkFacebookServer,
+                              icon: const Icon(Icons.network_check),
+                              label: const Text('Facebook RTMPS সার্ভার সংযোগ পরীক্ষা'),
                             ),
                           ),
                           const SizedBox(height: 12),
