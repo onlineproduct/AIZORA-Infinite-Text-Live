@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main, feature/live-preview-layout]
+    branches: [main, feature/live-preview-layout, feature/text-border-outline]
   workflow_dispatch:
 
 permissions:
@@ -38,6 +38,94 @@ jobs:
               --project-name aizora_infinite_text_live \
               --org com.example
           fi
+
+      - name: Ensure Android Gradle plugin repositories
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          candidates = [Path("android/settings.gradle.kts"), Path("android/settings.gradle")]
+          settings = next((p for p in candidates if p.exists()), None)
+          if settings is None:
+              raise SystemExit("Android settings.gradle file missing")
+          source = settings.read_text()
+          match = re.search(r"pluginManagement\s*\{", source)
+          if not match:
+              raise SystemExit("pluginManagement block missing; refusing unsafe patch")
+          opening = source.index("{", match.start())
+          depth = 1
+          end = opening + 1
+          while end < len(source) and depth:
+              if source[end] == "{":
+                  depth += 1
+              elif source[end] == "}":
+                  depth -= 1
+              end += 1
+          if depth:
+              raise SystemExit("Unbalanced pluginManagement block")
+          block = source[opening + 1:end - 1]
+          repositories = re.search(r"repositories\s*\{", block)
+          if repositories:
+              pos = repositories.end()
+              block = block[:pos] + "\n        google()\n        mavenCentral()\n        gradlePluginPortal()\n" + block[pos:]
+          else:
+              block = "\n    repositories {\n        google()\n        mavenCentral()\n        gradlePluginPortal()\n    }\n" + block
+          settings.write_text(source[:opening + 1] + block + source[end - 1:])
+          print("Configured Google Maven and Gradle plugin repositories in", settings)
+          PY
+
+      - name: Install native offscreen H264 encoder source
+        run: |
+          TARGET="android/app/src/main/kotlin/com/example/aizora_infinite_text_live"
+          mkdir -p "$TARGET"
+          cp native/android/AizoraH264Encoder.kt "$TARGET/AizoraH264Encoder.kt"
+          cp native/android/AizoraRtmpsTransport.kt "$TARGET/AizoraRtmpsTransport.kt"
+          cp native/android/AizoraRtmpCommands.kt "$TARGET/AizoraRtmpCommands.kt"
+          cp native/android/AizoraAvcFlvPacketizer.kt "$TARGET/AizoraAvcFlvPacketizer.kt"
+          cp native/android/AizoraRtmpChunkReader.kt "$TARGET/AizoraRtmpChunkReader.kt"
+          cp native/android/AizoraRtmpSession.kt "$TARGET/AizoraRtmpSession.kt"
+          cp native/android/AizoraAmf0Reader.kt "$TARGET/AizoraAmf0Reader.kt"
+
+      - name: Configure foreground media service permissions
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+
+          manifest = Path("android/app/src/main/AndroidManifest.xml")
+          if not manifest.exists():
+              raise SystemExit("AndroidManifest.xml missing after Flutter scaffold")
+          ET.register_namespace("android", "http://schemas.android.com/apk/res/android")
+          android = "{http://schemas.android.com/apk/res/android}"
+          tree = ET.parse(manifest)
+          root = tree.getroot()
+
+          required_permissions = (
+              "android.permission.INTERNET",
+              "android.permission.FOREGROUND_SERVICE",
+              "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
+          )
+          existing = {node.get(android + "name") for node in root.findall("uses-permission")}
+          for permission in required_permissions:
+              if permission not in existing:
+                  ET.SubElement(root, "uses-permission", {android + "name": permission})
+
+          app = root.find("application")
+          if app is None:
+              raise SystemExit("Android application node missing")
+          service_name = "id.flutter.id_flutter_background_service.BackgroundService"
+          # The plugin's manifest owns the actual service class; override its FGS type here.
+          service_name = "id.flutter.flutter_background_service.BackgroundService"
+          service = next((node for node in app.findall("service")
+                          if node.get(android + "name") == service_name), None)
+          if service is None:
+              service = ET.SubElement(app, "service", {android + "name": service_name})
+          # Let the plugin manifest define android:exported to avoid a manifest-merger conflict.
+          service.set(android + "foregroundServiceType", "mediaPlayback")
+          tree.write(manifest, encoding="utf-8", xml_declaration=True)
+          print("Configured Android media foreground-service permissions and type")
+          PY
 
       - name: Configure Android compile SDK
         run: |
