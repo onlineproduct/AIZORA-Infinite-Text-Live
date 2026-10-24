@@ -6,6 +6,7 @@ import 'package:flutter/rendering.dart';
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter/material.dart';
 
 class LetterFadeLoopText extends StatefulWidget {
@@ -78,8 +79,49 @@ class _LetterFadeLoopTextState extends State<LetterFadeLoopText>
   }
 }
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await _configureBackgroundService();
   runApp(const AizoraApp());
+}
+
+Future<void> _configureBackgroundService() async {
+  final service = FlutterBackgroundService();
+  await service.configure(
+    androidConfiguration: AndroidConfiguration(
+      onStart: _backgroundServiceStart,
+      autoStart: false,
+      isForegroundMode: true,
+      notificationChannelId: 'aizora_live_service',
+      initialNotificationTitle: 'AIZORA Infinite Text Live',
+      initialNotificationContent: 'লাইভ ব্যাকগ্রাউন্ড সার্ভিস প্রস্তুত',
+      foregroundServiceNotificationId: 8741,
+    ),
+    iosConfiguration: IosConfiguration(
+      autoStart: false,
+      onForeground: _backgroundServiceStart,
+      onBackground: _backgroundServiceIosBackground,
+    ),
+  );
+}
+
+@pragma('vm:entry-point')
+Future<bool> _backgroundServiceIosBackground(ServiceInstance service) async {
+  WidgetsFlutterBinding.ensureInitialized();
+  return true;
+}
+
+@pragma('vm:entry-point')
+void _backgroundServiceStart(ServiceInstance service) {
+  service.on('stopAizoraBackgroundService').listen((_) {
+    service.stopSelf();
+  });
+  service.on('aizoraStatus').listen((_) {
+    service.invoke('aizoraBackgroundStatus', {
+      'status': 'foreground_service_running',
+      'streaming': false,
+    });
+  });
 }
 
 class AizoraApp extends StatelessWidget {
