@@ -35,6 +35,15 @@ jobs:
             flutter create --platforms=windows . --project-name aizora_infinite_text_live --org com.example
           }
 
+      - name: Silence deprecated coroutine header error in legacy Windows plugin
+        shell: pwsh
+        run: |
+          $cmake = Get-Content "windows/CMakeLists.txt" -Raw
+          $definition = "add_compile_definitions(_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS)"
+          if ($cmake -notmatch [regex]::Escape($definition)) {
+            Set-Content -Path "windows/CMakeLists.txt" -Value ($definition + "`r`n" + $cmake) -NoNewline
+          }
+
       - name: Install dependencies
         run: flutter pub get
 
