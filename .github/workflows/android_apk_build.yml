@@ -54,6 +54,7 @@ jobs:
           root = tree.getroot()
 
           required_permissions = (
+              "android.permission.INTERNET",
               "android.permission.FOREGROUND_SERVICE",
               "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
           )
