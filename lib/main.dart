@@ -118,7 +118,6 @@ void _backgroundServiceStart(ServiceInstance service) {
   // This isolate keeps an independent scene timeline while the Activity is
   // backgrounded. It does NOT encode or transmit Facebook Live video.
   final startedAt = DateTime.now();
-  var running = true;
   final timeline = AizoraSceneTimeline(startedAt: startedAt);
   List<String> sceneTexts = const [];
   List<List<int>> sceneGradients = const [];
@@ -155,7 +154,6 @@ void _backgroundServiceStart(ServiceInstance service) {
     const Duration(seconds: 1), (_) => publishStatus(),
   );
   service.on('stopAizoraBackgroundService').listen((_) {
-    running = false;
     statusTimer.cancel();
     service.stopSelf();
   });
