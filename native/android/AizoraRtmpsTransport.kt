@@ -41,6 +41,8 @@ class AizoraRtmpsTransport : Closeable {
         }
     }
 
+    internal fun serverInput(): InputStream = checkNotNull(input) { "Not connected" }
+
     /** Perform the RTMP C0/C1 -> S0/S1/S2 -> C2 handshake over TLS. */
     fun handshake() {
         val source = checkNotNull(input) { "Not connected" }
