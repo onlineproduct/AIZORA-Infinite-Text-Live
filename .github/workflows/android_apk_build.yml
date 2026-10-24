@@ -47,6 +47,7 @@ jobs:
           cp native/android/AizoraRtmpsTransport.kt "$TARGET/AizoraRtmpsTransport.kt"
           cp native/android/AizoraRtmpCommands.kt "$TARGET/AizoraRtmpCommands.kt"
           cp native/android/AizoraAvcFlvPacketizer.kt "$TARGET/AizoraAvcFlvPacketizer.kt"
+          cp native/android/AizoraRtmpChunkReader.kt "$TARGET/AizoraRtmpChunkReader.kt"
 
       - name: Configure foreground media service permissions
         run: |
