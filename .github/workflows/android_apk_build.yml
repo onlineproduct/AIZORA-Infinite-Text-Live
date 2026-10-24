@@ -45,6 +45,7 @@ jobs:
           mkdir -p "$TARGET"
           cp native/android/AizoraH264Encoder.kt "$TARGET/AizoraH264Encoder.kt"
           cp native/android/AizoraRtmpsTransport.kt "$TARGET/AizoraRtmpsTransport.kt"
+          cp native/android/AizoraRtmpCommands.kt "$TARGET/AizoraRtmpCommands.kt"
 
       - name: Configure foreground media service permissions
         run: |
