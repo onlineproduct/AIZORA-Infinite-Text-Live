@@ -57,6 +57,11 @@ class _AizoraHomePageState extends State<AizoraHomePage>
   String _liveTitle = 'AIZORA TEXT LIVE';
   String _customText = '';
   BoxFit _backgroundFit = BoxFit.cover;
+  bool _showTextBorder = true;
+  Color _textBorderColor = const Color(0xFF67E8F9);
+  double _textBorderWidth = 2;
+  double _textBorderRadius = 18;
+  Color _textColor = Colors.white;
   static const _effects = ['Fade', 'Slide Up', 'Slide Left', 'Zoom', 'Pulse', 'Rotate', 'Flip', 'Bounce', 'Shake', 'Wave', 'Typewriter', 'Glow'];
 
   final List<String> _texts = [
@@ -285,8 +290,8 @@ class _AizoraHomePageState extends State<AizoraHomePage>
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
               decoration: BoxDecoration(
                 color: Colors.black.withValues(alpha: 0.35),
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.35), width: 2),
+                borderRadius: BorderRadius.circular(_textBorderRadius),
+                border: _showTextBorder ? Border.all(color: _textBorderColor, width: _textBorderWidth) : null,
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.25),
@@ -305,7 +310,7 @@ class _AizoraHomePageState extends State<AizoraHomePage>
                     style: TextStyle(
                       fontSize: _textFontSize,
                       fontWeight: FontWeight.w800,
-                      color: Colors.white.withValues(alpha: _effect == 'Fade' ? 0.25 + 0.75 * t : 1),
+                      color: _textColor.withValues(alpha: _effect == 'Fade' ? 0.25 + 0.75 * t : 1),
                       shadows: [
                         Shadow(color: _effect == 'Glow' ? const Color(0xFF67E8F9) : Colors.black,
                             blurRadius: _effect == 'Glow' ? 8 + 24 * t : 10),
@@ -433,6 +438,20 @@ class _AizoraHomePageState extends State<AizoraHomePage>
                         decoration: const InputDecoration(hintText: 'যেমন: AIZORA TEXT LIVE', prefixIcon: Icon(Icons.title), border: OutlineInputBorder(), counterText: ''),
                         onChanged: (v) => setState(() => _liveTitle = v),
                       ),
+                      const SizedBox(height: 8),
+                      const Text('লেখার বর্ডার', style: TextStyle(fontWeight: FontWeight.w600)),
+                      SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('বর্ডার দেখাও'), value: _showTextBorder, onChanged: (v) => setState(() => _showTextBorder = v)),
+                      Wrap(spacing: 8, children: [
+                        for (final color in [const Color(0xFF67E8F9), Colors.white, const Color(0xFFFBBF24), const Color(0xFFF472B6), const Color(0xFF4ADE80), Colors.red])
+                          InkWell(onTap: () => setState(() => _textBorderColor = color), child: Container(width: 32, height: 32, decoration: BoxDecoration(color: color, shape: BoxShape.circle, border: Border.all(color: _textBorderColor == color ? Colors.white : Colors.white24, width: _textBorderColor == color ? 3 : 1)))),
+                      ]),
+                      Row(children: [const Text('বর্ডারের পুরুত্ব'), const Spacer(), Text('${_textBorderWidth.toStringAsFixed(1)}')]),
+                      Slider(value: _textBorderWidth, min: 1, max: 6, divisions: 10, onChanged: (v) => setState(() => _textBorderWidth = v)),
+                      Row(children: [const Text('কোণ গোল করার মাত্রা'), const Spacer(), Text('${_textBorderRadius.round()}')]),
+                      Slider(value: _textBorderRadius, min: 0, max: 40, divisions: 8, onChanged: (v) => setState(() => _textBorderRadius = v)),
+                      const SizedBox(height: 8),
+                      const Text('লেখার রং', style: TextStyle(fontWeight: FontWeight.w600)),
+                      Wrap(spacing: 8, children: [for (final color in [Colors.white, const Color(0xFF67E8F9), const Color(0xFFFBBF24), const Color(0xFFF472B6), const Color(0xFF4ADE80), Colors.red]) InkWell(onTap: () => setState(() => _textColor = color), child: Container(width: 32, height: 32, decoration: BoxDecoration(color: color, shape: BoxShape.circle, border: Border.all(color: _textColor == color ? Colors.white : Colors.white24, width: _textColor == color ? 3 : 1))))]),
                       const SizedBox(height: 8),
                       const Text('ব্যাকগ্রাউন্ড ছবি ক্রপ', style: TextStyle(fontWeight: FontWeight.w600)),
                       DropdownButtonFormField<BoxFit>(
