@@ -53,6 +53,7 @@ class _AizoraHomePageState extends State<AizoraHomePage>
   String _effect = 'Fade';
   bool _autoEffects = true;
   bool _landscapePreview = true;
+  double _textFontSize = 34;
   static const _effects = ['Fade', 'Slide Up', 'Slide Left', 'Zoom', 'Pulse', 'Rotate', 'Flip', 'Bounce', 'Shake', 'Wave', 'Typewriter', 'Glow'];
 
   final List<String> _texts = [
@@ -113,7 +114,7 @@ class _AizoraHomePageState extends State<AizoraHomePage>
             mainAxisSize: MainAxisSize.min,
             children: [
               const Text(
-                'Server URL ও Stream Key শুধুমাত্র এই sesssion-এ memory-এ রাখা হবে।',
+                'Server URL ও Stream Key শুধু এই সেশনে মেমরিতে থাকবে; অ্যাপ বন্ধ হলে মুছে যাবে।',
               ),
               const SizedBox(height: 12),
               TextField(
@@ -289,7 +290,7 @@ class _AizoraHomePageState extends State<AizoraHomePage>
                     _effect == 'Typewriter' ? text.substring(0, (text.length * t).round()) : text,
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontSize: 34,
+                      fontSize: _textFontSize,
                       fontWeight: FontWeight.w800,
                       color: Colors.white.withValues(alpha: _effect == 'Fade' ? 0.25 + 0.75 * t : 1),
                       shadows: [
@@ -378,7 +379,7 @@ class _AizoraHomePageState extends State<AizoraHomePage>
                   ),
                 ],
               ),
-              Row(children: [
+              if (_showSettings) Row(children: [
                 const Icon(Icons.animation, color: Color(0xFF67E8F9)),
                 const SizedBox(width: 8),
                 Expanded(child: DropdownButton<String>(
@@ -390,7 +391,24 @@ class _AizoraHomePageState extends State<AizoraHomePage>
                     onSelected: (v) => setState(() => _autoEffects = v)),
               ]),
               if (_showSettings) ...[
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
+                const Align(alignment: Alignment.centerLeft, child: Text('ANIMATION & TEXT', style: TextStyle(color: Color(0xFF67E8F9), fontWeight: FontWeight.bold, letterSpacing: 1.0))),
+                const SizedBox(height: 6),
+                Card(
+                  color: const Color(0xFF111B2E),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Row(children: [const Icon(Icons.format_size, color: Color(0xFF67E8F9)), const SizedBox(width: 8), const Text('Text size'), const Spacer(), Text('${_textFontSize.round()} px')]),
+                      Slider(value: _textFontSize, min: 20, max: 52, divisions: 16, label: _textFontSize.round().toString(), onChanged: (v) => setState(() => _textFontSize = v)),
+                      SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('Auto change effects'), subtitle: const Text('প্রতি ৩ সেকেন্ডে ইফেক্ট বদলাবে'), value: _autoEffects, onChanged: (v) => setState(() => _autoEffects = v)),
+                      SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('Auto change text/background'), subtitle: const Text('অ্যানিমেশন চালু বা বন্ধ করুন নিচের বাটন থেকে'), value: _isRunning, onChanged: (v) => setState(() { _isRunning = v; _statusMessage = v ? 'Animation resumed.' : 'Animation paused.'; })),
+                    ]),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Align(alignment: Alignment.centerLeft, child: Text('FACEBOOK LIVE', style: TextStyle(color: Color(0xFF67E8F9), fontWeight: FontWeight.bold, letterSpacing: 1.0))),
+                const SizedBox(height: 6),
                 Row(
                   children: [
                     Expanded(
@@ -401,16 +419,6 @@ class _AizoraHomePageState extends State<AizoraHomePage>
                       ),
                     ),
                     const SizedBox(width: 12),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () => setState(() {
-                          _isRunning = !_isRunning;
-                          _statusMessage = _isRunning ? 'Animation resumed.' : 'Animation paused.';
-                        }),
-                        icon: Icon(_isRunning ? Icons.pause : Icons.play_arrow),
-                        label: Text(_isRunning ? 'Pause animation' : 'Resume animation'),
-                      ),
-                    ),
                   ],
                 ),
               ],
