@@ -455,6 +455,93 @@ class _AizoraHomePageState extends State<AizoraHomePage>
     );
   }
 
+  Widget _dashboardMetric(IconData icon, String label, String value) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0B1222),
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: const Color(0xFF34456D)),
+      ),
+      child: Row(children: [
+        Icon(icon, color: const Color(0xFF67E8F9), size: 21),
+        const SizedBox(width: 8),
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(label, style: const TextStyle(color: Colors.white54, fontSize: 10)),
+          const SizedBox(height: 3),
+          Text(value, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
+        ])),
+      ]),
+    );
+  }
+
+  Widget _quickAction(String label, IconData icon, String tab) {
+    return OutlinedButton.icon(
+      onPressed: () => setState(() {
+        _studioTab = tab;
+        _showSettings = tab == 'Editor' || tab == 'Settings';
+      }),
+      icon: Icon(icon, size: 18),
+      label: Text(label),
+    );
+  }
+
+  Widget _buildNavigationPanel() {
+    const items = <(String, String, IconData)>[
+      ('Home', 'Home', Icons.dashboard_rounded),
+      ('Editor', 'Editor', Icons.text_fields_rounded),
+      ('Background', 'Background', Icons.wallpaper_rounded),
+      ('Animation', 'Animation', Icons.auto_awesome_rounded),
+      ('Music', 'Music', Icons.music_note_rounded),
+      ('Live Setup', 'Live Setup', Icons.settings_input_antenna_rounded),
+      ('Live Control', 'Live Control', Icons.live_tv_rounded),
+      ('Settings', 'Settings', Icons.tune_rounded),
+    ];
+    return _studioCard(
+      icon: Icons.apps_rounded,
+      title: 'STUDIO NAVIGATION',
+      subtitle: 'একটি স্ক্রিন বেছে নিন',
+      child: LayoutBuilder(builder: (context, constraints) {
+        final columns = constraints.maxWidth < 340 ? 2 : 4;
+        final itemWidth = (constraints.maxWidth - (columns - 1) * 8) / columns;
+        return Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final item in items)
+              SizedBox(
+                width: itemWidth,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(14),
+                  onTap: () => setState(() {
+                    _studioTab = item.$1;
+                    _showSettings = item.$1 == 'Editor' || item.$1 == 'Settings';
+                  }),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(14),
+                      gradient: _studioTab == item.$1
+                          ? const LinearGradient(colors: [Color(0xFF2563EB), Color(0xFF7C3AED)])
+                          : const LinearGradient(colors: [Color(0xFF101A30), Color(0xFF151D38)]),
+                      border: Border.all(color: _studioTab == item.$1 ? const Color(0xFF8B7CFF) : const Color(0xFF34456D)),
+                    ),
+                    child: Column(mainAxisSize: MainAxisSize.min, children: [
+                      Icon(item.$3, color: _studioTab == item.$1 ? Colors.white : const Color(0xFF9FB0D8), size: 22),
+                      const SizedBox(height: 6),
+                      Text(item.$2, textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontSize: 10, fontWeight: _studioTab == item.$1 ? FontWeight.w800 : FontWeight.w600)),
+                    ]),
+                  ),
+                ),
+              ),
+          ],
+        );
+      }),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -487,24 +574,36 @@ class _AizoraHomePageState extends State<AizoraHomePage>
                 ]),
               ),
               const SizedBox(height: 12),
-              Wrap(
-                alignment: WrapAlignment.center,
-                spacing: 7,
-                runSpacing: 7,
-                children: [
-                  for (final tab in const ['Home', 'Editor', 'Background', 'Animation', 'Music', 'Live Setup', 'Live Control', 'Settings'])
-                    ChoiceChip(
-                      label: Text(tab),
-                      selected: _studioTab == tab,
-                      onSelected: (_) => setState(() {
-                        _studioTab = tab;
-                        if (tab == 'Editor' || tab == 'Animation' || tab == 'Settings') _showSettings = true;
-                        if (tab == 'Home' || tab == 'Background' || tab == 'Music' || tab == 'Live Setup' || tab == 'Live Control') _showSettings = false;
-                      }),
-                    ),
-                ],
-              ),
+              _buildNavigationPanel(),
               const SizedBox(height: 12),
+              if (_studioTab == 'Home')
+                _studioCard(
+                  icon: Icons.dashboard_rounded,
+                  title: 'HOME DASHBOARD',
+                  subtitle: 'আপনার টেক্সট লাইভ স্টুডিওর সব টুল এক জায়গায়',
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                    Row(children: [
+                      Expanded(child: _dashboardMetric(Icons.text_fields_rounded, 'Text layers', '01')),
+                      const SizedBox(width: 8),
+                      Expanded(child: _dashboardMetric(Icons.auto_awesome_rounded, 'Effects', '${_effects.length}')),
+                    ]),
+                    const SizedBox(height: 12),
+                    Row(children: [
+                      Expanded(child: _dashboardMetric(Icons.image_rounded, 'Background', _backgroundImage == null ? 'Gradient' : 'Photo')),
+                      const SizedBox(width: 8),
+                      Expanded(child: _dashboardMetric(Icons.wifi_tethering_rounded, 'Live status', _isStreaming ? 'LIVE' : 'Ready')),
+                    ]),
+                    const SizedBox(height: 14),
+                    const Text('QUICK ACTIONS', style: TextStyle(color: Color(0xFF9FB0D8), fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 1.2)),
+                    const SizedBox(height: 8),
+                    Wrap(spacing: 8, runSpacing: 8, children: [
+                      _quickAction('Edit text', Icons.edit_rounded, 'Editor'),
+                      _quickAction('Background', Icons.wallpaper_rounded, 'Background'),
+                      _quickAction('Animations', Icons.animation_rounded, 'Animation'),
+                      _quickAction('Music', Icons.music_note_rounded, 'Music'),
+                    ]),
+                  ]),
+                ),
               if (_studioTab == 'Background')
                 _studioCard(
                   icon: Icons.wallpaper_rounded,
@@ -794,6 +893,7 @@ class _AizoraHomePageState extends State<AizoraHomePage>
                         onSelected: (_) => setState(() { _effect = fx; _autoEffects = false; })),
                   ]),
                 ]))),
+              if (['Home', 'Editor', 'Animation', 'Live Control'].contains(_studioTab)) ...[
               const SizedBox(height: 14),
               const Align(alignment: Alignment.centerLeft, child: Text('✦  LIVE SCENE PREVIEW', style: TextStyle(color: Color(0xFF67E8F9), fontWeight: FontWeight.bold, letterSpacing: 1.2))),
               const SizedBox(height: 10),
@@ -840,7 +940,7 @@ class _AizoraHomePageState extends State<AizoraHomePage>
                   ),
                 ],
               ),
-              if (_showSettings)
+              if (_showSettings && (_studioTab == 'Editor' || _studioTab == 'Settings'))
                 SingleChildScrollView(child: Column(children: [
               Row(children: [
                 const Icon(Icons.animation, color: Color(0xFF67E8F9)),
@@ -969,6 +1069,7 @@ class _AizoraHomePageState extends State<AizoraHomePage>
                 ),
               ],
                 ])),
+              ],
               const SizedBox(height: 12),
               Text(
                 _statusMessage,
