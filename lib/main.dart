@@ -23,7 +23,10 @@ class AizoraApp extends StatelessWidget {
         useMaterial3: true,
         brightness: Brightness.dark,
         scaffoldBackgroundColor: const Color(0xFF080D1B),
-        colorSchemeSeed: const Color(0xFF38BDF8),
+        colorSchemeSeed: const Color(0xFF8B5CF6),
+        cardTheme: CardThemeData(color: const Color(0xFF111B2E), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20))),
+        filledButtonTheme: FilledButtonThemeData(style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 15), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)))),
+        outlinedButtonTheme: OutlinedButtonThemeData(style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)))),
       ),
       home: const AizoraHomePage(),
     );
@@ -384,7 +387,7 @@ class _AizoraHomePageState extends State<AizoraHomePage>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('AIZORA • TEXT LIVE', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        title: const Text('✦ AIZORA  INFINITE TEXT LIVE', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, letterSpacing: 0.5)),
         centerTitle: true,
         backgroundColor: const Color(0xFF101A30),
         foregroundColor: Colors.white,
@@ -395,6 +398,23 @@ class _AizoraHomePageState extends State<AizoraHomePage>
           child: LayoutBuilder(builder: (context, constraints) => SingleChildScrollView(
             child: Column(
             children: [
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(colors: [Color(0xFF1E1B4B), Color(0xFF172554)]),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: const Color(0xFF6366F1).withValues(alpha: 0.5)),
+                ),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  const Text('YOUR LIVE STUDIO', style: TextStyle(color: Color(0xFF67E8F9), fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 2)),
+                  const SizedBox(height: 6),
+                  const Text('Create • Animate • Go Live', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800)),
+                  const SizedBox(height: 5),
+                  Text(_isStreaming ? '● LIVE' : '● READY TO CREATE', style: TextStyle(color: _isStreaming ? const Color(0xFFFB7185) : const Color(0xFF4ADE80), fontWeight: FontWeight.bold)),
+                ]),
+              ),
+              const SizedBox(height: 14),
               const Align(alignment: Alignment.centerLeft, child: Text('✦  LIVE SCENE PREVIEW', style: TextStyle(color: Color(0xFF67E8F9), fontWeight: FontWeight.bold, letterSpacing: 1.2))),
               const SizedBox(height: 10),
               SizedBox(
@@ -410,7 +430,7 @@ class _AizoraHomePageState extends State<AizoraHomePage>
                   ),
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               SegmentedButton<bool>(
                 segments: const [
                   ButtonSegment(value: true, label: Text('Horizontal'), icon: Icon(Icons.stay_current_landscape)),
