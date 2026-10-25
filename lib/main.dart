@@ -488,12 +488,8 @@ class _AizoraHomePageState extends State<AizoraHomePage>
   Widget _buildNavigationPanel() {
     const items = <(String, String, IconData)>[
       ('Home', 'Home', Icons.dashboard_rounded),
-      ('Editor', 'Editor', Icons.text_fields_rounded),
-      ('Background', 'Background', Icons.wallpaper_rounded),
-      ('Animation', 'Animation', Icons.auto_awesome_rounded),
-      ('Music', 'Music', Icons.music_note_rounded),
-      ('Live Setup', 'Live Setup', Icons.settings_input_antenna_rounded),
-      ('Live Control', 'Live Control', Icons.live_tv_rounded),
+      ('Editor', 'Text Editor', Icons.text_fields_rounded),
+      ('Live Control', 'Go Live', Icons.live_tv_rounded),
       ('Settings', 'Settings', Icons.tune_rounded),
     ];
     return _studioCard(
@@ -575,6 +571,56 @@ class _AizoraHomePageState extends State<AizoraHomePage>
               const SizedBox(height: 12),
               _buildNavigationPanel(),
               const SizedBox(height: 12),
+              if (_studioTab == 'Settings')
+                _studioCard(
+                  icon: Icons.tune_rounded,
+                  title: 'ALL SETTINGS',
+                  subtitle: 'যে সেটিং পরিবর্তন করতে চান সেটি বেছে নিন',
+                  child: LayoutBuilder(builder: (context, constraints) {
+                    const settingsItems = <(String, String, IconData, String)>[
+                      ('Editor', 'Text & Canvas', Icons.text_fields_rounded, 'লেখা, ফন্ট, রং, বর্ডার ও ক্যানভাস'),
+                      ('Background', 'Background', Icons.wallpaper_rounded, 'ছবি, ফিট ও ব্যাকগ্রাউন্ড'),
+                      ('Animation', 'Animation Effects', Icons.auto_awesome_rounded, '১২টি অ্যানিমেশন ও অটো ইফেক্ট'),
+                      ('Music', 'Music', Icons.music_note_rounded, 'ফোন থেকে গান ও লুপ'),
+                      ('Live Setup', 'Facebook Live Setup', Icons.settings_input_antenna_rounded, 'RTMPS সার্ভার ও স্ট্রিম কী'),
+                      ('Live Control', 'Live Control', Icons.live_tv_rounded, 'লাইভ কন্ট্রোল ও স্ট্যাটাস'),
+                    ];
+                    final columns = constraints.maxWidth < 340 ? 1 : 2;
+                    final width = (constraints.maxWidth - (columns - 1) * 8) / columns;
+                    return Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        for (final item in settingsItems)
+                          SizedBox(
+                            width: width,
+                            child: OutlinedButton(
+                              onPressed: () => setState(() {
+                                _studioTab = item.$1;
+                                _showSettings = true;
+                              }),
+                              style: OutlinedButton.styleFrom(
+                                alignment: Alignment.centerLeft,
+                                padding: const EdgeInsets.all(12),
+                              ),
+                              child: Row(children: [
+                                Icon(item.$3, color: const Color(0xFF67E8F9)),
+                                const SizedBox(width: 10),
+                                Expanded(child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(item.$2, style: const TextStyle(fontWeight: FontWeight.w700)),
+                                    const SizedBox(height: 3),
+                                    Text(item.$4, style: const TextStyle(fontSize: 11, color: Colors.white60)),
+                                  ],
+                                )),
+                              ]),
+                            ),
+                          ),
+                      ],
+                    );
+                  }),
+                ),
               if (_studioTab == 'Home')
                 _studioCard(
                   icon: Icons.dashboard_rounded,
@@ -597,9 +643,8 @@ class _AizoraHomePageState extends State<AizoraHomePage>
                     const SizedBox(height: 8),
                     Wrap(spacing: 8, runSpacing: 8, children: [
                       _quickAction('Edit text', Icons.edit_rounded, 'Editor'),
-                      _quickAction('Background', Icons.wallpaper_rounded, 'Background'),
-                      _quickAction('Animations', Icons.animation_rounded, 'Animation'),
-                      _quickAction('Music', Icons.music_note_rounded, 'Music'),
+                      _quickAction('All settings', Icons.tune_rounded, 'Settings'),
+                      _quickAction('Go Live', Icons.live_tv_rounded, 'Live Control'),
                     ]),
                   ]),
                 ),
