@@ -70,7 +70,7 @@ class _AizoraHomePageState extends State<AizoraHomePage>
   bool _showTextBorder = true;
   Color _textBorderColor = const Color(0xFF67E8F9);
   double _textBorderWidth = 2;
-  double _textBorderRadius = 18;
+  final double _textBorderRadius = 18;
   Color _textColor = Colors.white;
   Offset _textOffset = Offset.zero;
   bool _canvasPanEnabled = true;
@@ -479,7 +479,6 @@ class _AizoraHomePageState extends State<AizoraHomePage>
     return OutlinedButton.icon(
       onPressed: () => setState(() {
         _studioTab = tab;
-        _showSettings = tab == 'Editor' || tab == 'Settings';
       }),
       icon: Icon(icon, size: 18),
       label: Text(label),
@@ -512,7 +511,6 @@ class _AizoraHomePageState extends State<AizoraHomePage>
                   borderRadius: BorderRadius.circular(14),
                   onTap: () => setState(() {
                     _studioTab = item.$1;
-                    _showSettings = item.$1 == 'Editor' || item.$1 == 'Settings';
                   }),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 180),
@@ -593,7 +591,7 @@ class _AizoraHomePageState extends State<AizoraHomePage>
                         Slider(value: _textFontSize, min: 16, max: 64, divisions: 24, onChanged: (v) { setState(() => _textFontSize = v); refreshSheet(() {}); }),
                         const Text('Font'),
                         DropdownButtonFormField<String>(
-                          value: _fontFamily,
+                          initialValue: _fontFamily,
                           items: const [
                             DropdownMenuItem(value: 'Roboto', child: Text('Roboto')),
                             DropdownMenuItem(value: 'System', child: Text('System default')),
@@ -619,14 +617,14 @@ class _AizoraHomePageState extends State<AizoraHomePage>
                         Slider(value: _textBorderWidth, min: 1, max: 6, divisions: 10, onChanged: (v) { setState(() => _textBorderWidth = v); refreshSheet(() {}); }),
                         SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('Canvas drag ON/OFF'), value: _canvasPanEnabled, onChanged: (v) { setState(() => _canvasPanEnabled = v); refreshSheet(() {}); }),
                         DropdownButtonFormField<String>(
-                          value: _selectedCanvasLayer,
+                          initialValue: _selectedCanvasLayer,
                           decoration: const InputDecoration(labelText: 'Selected canvas layer'),
                           items: const [DropdownMenuItem(value: 'Text', child: Text('Text')), DropdownMenuItem(value: 'Background', child: Text('Background'))],
                           onChanged: (v) { if (v != null) { setState(() => _selectedCanvasLayer = v); refreshSheet(() {}); } },
                         ),
                         TextButton.icon(onPressed: () { setState(() { if (_selectedCanvasLayer == 'Text') { _textOffset = Offset.zero; } else { _backgroundOffset = Offset.zero; } }); refreshSheet(() {}); }, icon: const Icon(Icons.restart_alt), label: const Text('Reset selected layer position')),
                         DropdownButtonFormField<BoxFit>(
-                          value: _backgroundFit,
+                          initialValue: _backgroundFit,
                           decoration: const InputDecoration(labelText: 'Background image fit'),
                           items: const [
                             DropdownMenuItem(value: BoxFit.cover, child: Text('Cover')),
@@ -661,7 +659,7 @@ class _AizoraHomePageState extends State<AizoraHomePage>
                       subtitle: 'ইফেক্ট বেছে নিন বা অটো চালু রাখুন',
                       child: Column(children: [
                         DropdownButtonFormField<String>(
-                          value: _effect,
+                          initialValue: _effect,
                           decoration: const InputDecoration(labelText: 'Animation effect'),
                           items: _effects.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
                           onChanged: (v) { if (v != null) { setState(() { _effect = v; _autoEffects = false; }); refreshSheet(() {}); } },
