@@ -504,12 +504,129 @@ class _AizoraHomePageState extends State<AizoraHomePage>
               ),
               const SizedBox(height: 12),
               if (_studioTab == 'Background')
-                Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(children: [
-                  const Text('BACKGROUND STUDIO', style: TextStyle(fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 8),
-                  FilledButton.icon(onPressed: _pickBackground, icon: const Icon(Icons.add_photo_alternate), label: const Text('Choose background photo')),
-                  if (_backgroundImage != null) TextButton.icon(onPressed: () => setState(() => _backgroundImage = null), icon: const Icon(Icons.delete_outline), label: const Text('Remove photo')),
-                ]))),
+                _studioCard(
+                  icon: Icons.wallpaper_rounded,
+                  title: 'BACKGROUND STUDIO',
+                  subtitle: 'ছবি নির্বাচন করুন, প্রিভিউ দেখুন এবং ক্যানভাসে অবস্থান ঠিক করুন',
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: AspectRatio(
+                          aspectRatio: 16 / 9,
+                          child: Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              DecoratedBox(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: _backgrounds[_backgroundIndex % _backgrounds.length],
+                                  ),
+                                ),
+                              ),
+                              if (_backgroundImage != null)
+                                Image.memory(_backgroundImage!, fit: _backgroundFit),
+                              if (_backgroundImage == null)
+                                const Center(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.add_photo_alternate_outlined, size: 38, color: Colors.white70),
+                                      SizedBox(height: 8),
+                                      Text('No photo selected', style: TextStyle(color: Colors.white70)),
+                                    ],
+                                  ),
+                                ),
+                              Positioned(
+                                left: 10,
+                                right: 10,
+                                bottom: 10,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withValues(alpha: 0.55),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Text(
+                                    _backgroundImage == null ? 'Gradient background' : (_musicFileName == null ? 'Custom background photo' : 'Custom background photo'),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(fontSize: 12, color: Colors.white),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      FilledButton.icon(
+                        onPressed: _pickBackground,
+                        icon: const Icon(Icons.add_photo_alternate_rounded),
+                        label: Text(_backgroundImage == null ? 'Choose photo from phone' : 'Change background photo'),
+                      ),
+                      if (_backgroundImage != null) ...[
+                        const SizedBox(height: 8),
+                        OutlinedButton.icon(
+                          onPressed: () => setState(() {
+                            _backgroundImage = null;
+                            _backgroundOffset = Offset.zero;
+                            _selectedCanvasLayer = 'Background';
+                            _statusMessage = 'Background photo removed';
+                          }),
+                          icon: const Icon(Icons.delete_outline_rounded),
+                          label: const Text('Remove photo'),
+                        ),
+                      ],
+                      const SizedBox(height: 14),
+                      DropdownButtonFormField<BoxFit>(
+                        value: _backgroundFit,
+                        decoration: const InputDecoration(
+                          labelText: 'Photo fit',
+                          helperText: 'Cover crops edges • Contain shows full image • Fill stretches',
+                          border: OutlineInputBorder(),
+                        ),
+                        items: const [
+                          DropdownMenuItem(value: BoxFit.cover, child: Text('Cover — fill canvas')),
+                          DropdownMenuItem(value: BoxFit.contain, child: Text('Contain — show whole photo')),
+                          DropdownMenuItem(value: BoxFit.fill, child: Text('Fill — stretch to canvas')),
+                        ],
+                        onChanged: (value) {
+                          if (value != null) setState(() => _backgroundFit = value);
+                        },
+                      ),
+                      const SizedBox(height: 10),
+                      SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: const Text('Select background layer'),
+                        subtitle: const Text('এটি চালু থাকলে প্রিভিউতে ব্যাকগ্রাউন্ড টেনে সরানো যাবে'),
+                        value: _selectedCanvasLayer == 'Background',
+                        onChanged: (value) => setState(() {
+                          _selectedCanvasLayer = value ? 'Background' : 'Text';
+                        }),
+                      ),
+                      OutlinedButton.icon(
+                        onPressed: () => setState(() {
+                          _backgroundOffset = Offset.zero;
+                          _selectedCanvasLayer = 'Background';
+                          _statusMessage = 'Background position reset';
+                        }),
+                        icon: const Icon(Icons.center_focus_strong_rounded),
+                        label: const Text('Reset background position'),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        _backgroundImage == null
+                            ? 'এখন গ্রেডিয়েন্ট ব্যাকগ্রাউন্ড ব্যবহার হচ্ছে।'
+                            : 'Selected: background photo is stored in app memory for this session.',
+                        style: const TextStyle(color: Colors.white60, fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ),
               if (_studioTab == 'Music')
                 _studioCard(
                   icon: Icons.music_note_rounded,
