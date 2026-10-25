@@ -392,11 +392,14 @@ class _AizoraHomePageState extends State<AizoraHomePage>
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16),
-          child: Column(
+          child: LayoutBuilder(builder: (context, constraints) => SingleChildScrollView(
+            child: Column(
             children: [
               const Align(alignment: Alignment.centerLeft, child: Text('✦  LIVE SCENE PREVIEW', style: TextStyle(color: Color(0xFF67E8F9), fontWeight: FontWeight.bold, letterSpacing: 1.2))),
               const SizedBox(height: 10),
-              Expanded(
+              SizedBox(
+                height: (constraints.maxHeight * 0.48).clamp(180.0, 430.0),
+                width: double.infinity,
                 child: Center(
                   child: AspectRatio(
                     aspectRatio: _landscapePreview ? 16 / 9 : 9 / 16,
@@ -438,7 +441,7 @@ class _AizoraHomePageState extends State<AizoraHomePage>
                 ],
               ),
               if (_showSettings)
-                Expanded(child: SingleChildScrollView(child: Column(children: [
+                SingleChildScrollView(child: Column(children: [
               Row(children: [
                 const Icon(Icons.animation, color: Color(0xFF67E8F9)),
                 const SizedBox(width: 8),
@@ -549,7 +552,7 @@ class _AizoraHomePageState extends State<AizoraHomePage>
                   ],
                 ),
               ],
-                ]))),
+                ])),
               const SizedBox(height: 12),
               Text(
                 _statusMessage,
@@ -558,6 +561,7 @@ class _AizoraHomePageState extends State<AizoraHomePage>
               ),
             ],
           ),
+          )),
         ),
       ),
     );
