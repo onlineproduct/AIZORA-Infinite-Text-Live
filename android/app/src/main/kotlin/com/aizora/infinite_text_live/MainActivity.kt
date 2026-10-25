@@ -25,16 +25,16 @@ class MainActivity : FlutterActivity() {
                         return@setMethodCallHandler
                     }
 
-                    result.success(true)
-                    android.util.Log.i("AIZORA_LIVE", "startLive requested: serverUrl=$serverUrl width=$width height=$height streamKeyLength=${streamKey.length}")
+                    android.util.Log.w("AIZORA_LIVE", "RTMPS publisher is not implemented yet; refusing to report a false live start.")
+                    result.error("PUBLISHER_NOT_IMPLEMENTED", "RTMPS publishing is not implemented yet. No Facebook Live stream was started.", null)
                 }
                 "stopLive" -> {
-                    result.success(true)
-                    android.util.Log.i("AIZORA_LIVE", "stopLive requested")
+                    result.success(false)
+                    android.util.Log.i("AIZORA_LIVE", "No active publisher exists; stop acknowledged without claiming a stream stopped.")
                 }
                 "status" -> {
                     result.success(mapOf(
-                        "status" to "bridge_ready",
+                        "status" to "publisher_not_implemented",
                         "streaming" to false,
                         "platform" to "android",
                     ))
