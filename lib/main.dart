@@ -52,6 +52,7 @@ class _AizoraHomePageState extends State<AizoraHomePage>
   bool _isStreaming = false;
   bool _isBusy = false;
   bool _showSettings = false;
+  String _studioTab = 'Home';
   Uint8List? _backgroundImage;
   String _effect = 'Fade';
   bool _autoEffects = true;
@@ -414,6 +415,51 @@ class _AizoraHomePageState extends State<AizoraHomePage>
                   Text(_isStreaming ? '● LIVE' : '● READY TO CREATE', style: TextStyle(color: _isStreaming ? const Color(0xFFFB7185) : const Color(0xFF4ADE80), fontWeight: FontWeight.bold)),
                 ]),
               ),
+              const SizedBox(height: 12),
+              Wrap(
+                alignment: WrapAlignment.center,
+                spacing: 7,
+                runSpacing: 7,
+                children: [
+                  for (final tab in const ['Home', 'Editor', 'Background', 'Animation', 'Live'])
+                    ChoiceChip(
+                      label: Text(tab),
+                      selected: _studioTab == tab,
+                      onSelected: (_) => setState(() {
+                        _studioTab = tab;
+                        if (tab == 'Editor' || tab == 'Animation') _showSettings = true;
+                        if (tab == 'Home' || tab == 'Background' || tab == 'Live') _showSettings = false;
+                      }),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              if (_studioTab == 'Background')
+                Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(children: [
+                  const Text('BACKGROUND STUDIO', style: TextStyle(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  FilledButton.icon(onPressed: _pickBackground, icon: const Icon(Icons.add_photo_alternate), label: const Text('Choose background photo')),
+                  if (_backgroundImage != null) TextButton.icon(onPressed: () => setState(() => _backgroundImage = null), icon: const Icon(Icons.delete_outline), label: const Text('Remove photo')),
+                ]))),
+              if (_studioTab == 'Live')
+                Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(children: [
+                  const Text('FACEBOOK LIVE CONTROL', style: TextStyle(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  OutlinedButton.icon(onPressed: _configureStreamSettings, icon: const Icon(Icons.link), label: const Text('Configure RTMPS')),
+                  FilledButton.icon(onPressed: _isBusy ? null : _isStreaming ? _stopLive : _startLive,
+                    icon: Icon(_isStreaming ? Icons.stop_circle : Icons.live_tv),
+                    label: Text(_isStreaming ? 'Stop Live' : 'Start Live')),
+                ]))),
+              if (_studioTab == 'Animation')
+                Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(children: [
+                  const Text('ANIMATION EFFECTS', style: TextStyle(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  Wrap(spacing: 7, runSpacing: 7, children: [
+                    for (final fx in _effects)
+                      ChoiceChip(label: Text(fx), selected: _effect == fx,
+                        onSelected: (_) => setState(() { _effect = fx; _autoEffects = false; })),
+                  ]),
+                ]))),
               const SizedBox(height: 14),
               const Align(alignment: Alignment.centerLeft, child: Text('✦  LIVE SCENE PREVIEW', style: TextStyle(color: Color(0xFF67E8F9), fontWeight: FontWeight.bold, letterSpacing: 1.2))),
               const SizedBox(height: 10),
