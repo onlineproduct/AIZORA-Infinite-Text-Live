@@ -561,6 +561,39 @@ class _AizoraHomePageState extends State<AizoraHomePage>
                   Text('AIZORA SETTINGS', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
                 ]),
               ),
+              // Sticky canvas controls stay visible while the settings list scrolls.
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF17243D),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFF67E8F9).withValues(alpha: 0.65)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.crop_landscape_rounded, color: Color(0xFF67E8F9)),
+                      const SizedBox(width: 8),
+                      const Expanded(
+                        child: Text('CANVAS', style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: 1)),
+                      ),
+                      SegmentedButton<bool>(
+                        showSelectedIcon: false,
+                        segments: const [
+                          ButtonSegment(value: true, label: Text('Horizontal')),
+                          ButtonSegment(value: false, label: Text('Vertical')),
+                        ],
+                        selected: {_landscapePreview},
+                        onSelectionChanged: (s) {
+                          setState(() => _landscapePreview = s.first);
+                          refreshSheet(() {});
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
               Expanded(
                 child: ListView(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
@@ -634,14 +667,8 @@ class _AizoraHomePageState extends State<AizoraHomePage>
                           onChanged: (v) { if (v != null) { setState(() => _backgroundFit = v); refreshSheet(() {}); } },
                         ),
                         const SizedBox(height: 8),
-                        SegmentedButton<bool>(
-                          segments: const [
-                            ButtonSegment(value: true, label: Text('Horizontal'), icon: Icon(Icons.stay_current_landscape)),
-                            ButtonSegment(value: false, label: Text('Vertical'), icon: Icon(Icons.stay_current_portrait)),
-                          ],
-                          selected: {_landscapePreview},
-                          onSelectionChanged: (s) { setState(() => _landscapePreview = s.first); refreshSheet(() {}); },
-                        ),
+                        const Text('দিক পরিবর্তনের জন্য উপরের স্থায়ী CANVAS বার ব্যবহার করুন.',
+                          style: TextStyle(color: Colors.white60, fontSize: 12)),
                       ]),
                     ),
                     _studioCard(
