@@ -39,42 +39,6 @@ jobs:
               --org com.example
           fi
 
-      - name: Ensure Android Gradle plugin repositories
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          import re
-
-          candidates = [Path("android/settings.gradle.kts"), Path("android/settings.gradle")]
-          settings = next((p for p in candidates if p.exists()), None)
-          if settings is None:
-              raise SystemExit("Android settings.gradle file missing")
-          source = settings.read_text()
-          match = re.search(r"pluginManagement\s*\{", source)
-          if not match:
-              raise SystemExit("pluginManagement block missing; refusing unsafe patch")
-          opening = source.index("{", match.start())
-          depth = 1
-          end = opening + 1
-          while end < len(source) and depth:
-              if source[end] == "{":
-                  depth += 1
-              elif source[end] == "}":
-                  depth -= 1
-              end += 1
-          if depth:
-              raise SystemExit("Unbalanced pluginManagement block")
-          block = source[opening + 1:end - 1]
-          repositories = re.search(r"repositories\s*\{", block)
-          if repositories:
-              pos = repositories.end()
-              block = block[:pos] + "\n        google()\n        mavenCentral()\n        gradlePluginPortal()\n" + block[pos:]
-          else:
-              block = "\n    repositories {\n        google()\n        mavenCentral()\n        gradlePluginPortal()\n    }\n" + block
-          settings.write_text(source[:opening + 1] + block + source[end - 1:])
-          print("Configured Google Maven and Gradle plugin repositories in", settings)
-          PY
-
       - name: Install native offscreen H264 encoder source
         run: |
           TARGET="android/app/src/main/kotlin/com/example/aizora_infinite_text_live"
