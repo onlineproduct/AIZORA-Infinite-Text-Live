@@ -21,7 +21,8 @@ class AizoraApp extends StatelessWidget {
       theme: ThemeData(
         useMaterial3: true,
         brightness: Brightness.dark,
-        scaffoldBackgroundColor: const Color(0xFF0B1020),
+        scaffoldBackgroundColor: const Color(0xFF080D1B),
+        colorSchemeSeed: const Color(0xFF38BDF8),
       ),
       home: const AizoraHomePage(),
     );
@@ -293,8 +294,9 @@ class _AizoraHomePageState extends State<AizoraHomePage>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('AIZORA Infinite Text Live'),
-        backgroundColor: Colors.black.withValues(alpha: 0.22),
+        title: const Text('AIZORA • TEXT LIVE', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        centerTitle: true,
+        backgroundColor: const Color(0xFF101A30),
         foregroundColor: Colors.white,
       ),
       body: SafeArea(
@@ -302,8 +304,10 @@ class _AizoraHomePageState extends State<AizoraHomePage>
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
+              const Align(alignment: Alignment.centerLeft, child: Text('✦  LIVE SCENE PREVIEW', style: TextStyle(color: Color(0xFF67E8F9), fontWeight: FontWeight.bold, letterSpacing: 1.2))),
+              const SizedBox(height: 10),
               Expanded(
-                child: _buildText(),
+                child: ClipRRect(borderRadius: BorderRadius.circular(22), child: _buildText()),
               ),
               const SizedBox(height: 12),
               Wrap(
@@ -314,12 +318,13 @@ class _AizoraHomePageState extends State<AizoraHomePage>
                   FilledButton.icon(
                     onPressed: _isBusy ? null : _isStreaming ? _stopLive : _startLive,
                     icon: Icon(_isStreaming ? Icons.stop : Icons.live_tv),
+                    style: FilledButton.styleFrom(backgroundColor: _isStreaming ? const Color(0xFFB91C1C) : const Color(0xFF0891B2)),
                     label: Text(_isStreaming ? 'Stop Live' : 'Start Live'),
                   ),
                   OutlinedButton.icon(
                     onPressed: () => setState(() => _showSettings = !_showSettings),
                     icon: const Icon(Icons.tune),
-                    label: Text(_showSettings ? 'Hide settings' : 'Show settings'),
+                    label: Text(_showSettings ? 'Hide settings' : 'Settings'),
                   ),
                 ],
               ),
