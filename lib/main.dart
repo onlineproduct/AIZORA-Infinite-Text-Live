@@ -537,592 +537,249 @@ class _AizoraHomePageState extends State<AizoraHomePage>
     );
   }
 
+  Future<void> _openSettings() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: const Color(0xFF10172A),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (context, refreshSheet) => SizedBox(
+          height: MediaQuery.of(context).size.height * 0.88,
+          child: Column(
+            children: [
+              const SizedBox(height: 12),
+              Container(width: 42, height: 4, decoration: BoxDecoration(color: Colors.white30, borderRadius: BorderRadius.circular(9))),
+              const Padding(
+                padding: EdgeInsets.all(16),
+                child: Row(children: [
+                  Icon(Icons.tune_rounded, color: Color(0xFF67E8F9)),
+                  SizedBox(width: 10),
+                  Text('AIZORA SETTINGS', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+                ]),
+              ),
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                  children: [
+                    _studioCard(
+                      icon: Icons.text_fields_rounded,
+                      title: 'TEXT & CANVAS',
+                      subtitle: 'লেখা, ফন্ট, রং, বর্ডার ও দিক',
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        TextFormField(
+                          key: ValueKey('settings-text-$_customText'),
+                          initialValue: _customText,
+                          minLines: 2,
+                          maxLines: 4,
+                          maxLength: 500,
+                          decoration: const InputDecoration(labelText: 'লাইভে দেখানোর লেখা', hintText: 'বাংলা বা English লিখুন', border: OutlineInputBorder()),
+                          onChanged: (v) { setState(() => _customText = v); refreshSheet(() {}); },
+                        ),
+                        const SizedBox(height: 8),
+                        TextFormField(
+                          key: ValueKey('settings-title-$_liveTitle'),
+                          initialValue: _liveTitle,
+                          maxLength: 40,
+                          decoration: const InputDecoration(labelText: 'উপরের শিরোনাম', border: OutlineInputBorder(), counterText: ''),
+                          onChanged: (v) { setState(() => _liveTitle = v); refreshSheet(() {}); },
+                        ),
+                        Row(children: [const Text('Text size'), const Spacer(), Text('${_textFontSize.round()} px')]),
+                        Slider(value: _textFontSize, min: 16, max: 64, divisions: 24, onChanged: (v) { setState(() => _textFontSize = v); refreshSheet(() {}); }),
+                        const Text('Font'),
+                        DropdownButtonFormField<String>(
+                          value: _fontFamily,
+                          items: const [
+                            DropdownMenuItem(value: 'Roboto', child: Text('Roboto')),
+                            DropdownMenuItem(value: 'System', child: Text('System default')),
+                            DropdownMenuItem(value: 'sans-serif', child: Text('Sans Serif')),
+                            DropdownMenuItem(value: 'serif', child: Text('Serif')),
+                            DropdownMenuItem(value: 'monospace', child: Text('Monospace')),
+                          ],
+                          onChanged: (v) { if (v != null) { setState(() => _fontFamily = v); refreshSheet(() {}); } },
+                        ),
+                        const SizedBox(height: 10),
+                        const Text('Text color'),
+                        Wrap(spacing: 10, children: [
+                          for (final color in [Colors.white, const Color(0xFF67E8F9), const Color(0xFFFBBF24), const Color(0xFFF472B6), const Color(0xFF4ADE80), Colors.red])
+                            IconButton(onPressed: () { setState(() => _textColor = color); refreshSheet(() {}); }, icon: Icon(Icons.circle, color: color), tooltip: 'Select text color'),
+                        ]),
+                        SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('Show text border'), value: _showTextBorder, onChanged: (v) { setState(() => _showTextBorder = v); refreshSheet(() {}); }),
+                        const Text('Border color'),
+                        Wrap(spacing: 10, children: [
+                          for (final color in [const Color(0xFF67E8F9), Colors.white, const Color(0xFFFBBF24), const Color(0xFFF472B6), const Color(0xFF4ADE80), Colors.red])
+                            IconButton(onPressed: () { setState(() => _textBorderColor = color); refreshSheet(() {}); }, icon: Icon(Icons.circle, color: color), tooltip: 'Select border color'),
+                        ]),
+                        Row(children: [const Text('Border width'), const Spacer(), Text(_textBorderWidth.toStringAsFixed(1))]),
+                        Slider(value: _textBorderWidth, min: 1, max: 6, divisions: 10, onChanged: (v) { setState(() => _textBorderWidth = v); refreshSheet(() {}); }),
+                        SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('Canvas drag ON/OFF'), value: _canvasPanEnabled, onChanged: (v) { setState(() => _canvasPanEnabled = v); refreshSheet(() {}); }),
+                        DropdownButtonFormField<String>(
+                          value: _selectedCanvasLayer,
+                          decoration: const InputDecoration(labelText: 'Selected canvas layer'),
+                          items: const [DropdownMenuItem(value: 'Text', child: Text('Text')), DropdownMenuItem(value: 'Background', child: Text('Background'))],
+                          onChanged: (v) { if (v != null) { setState(() => _selectedCanvasLayer = v); refreshSheet(() {}); } },
+                        ),
+                        TextButton.icon(onPressed: () { setState(() { if (_selectedCanvasLayer == 'Text') { _textOffset = Offset.zero; } else { _backgroundOffset = Offset.zero; } }); refreshSheet(() {}); }, icon: const Icon(Icons.restart_alt), label: const Text('Reset selected layer position')),
+                        DropdownButtonFormField<BoxFit>(
+                          value: _backgroundFit,
+                          decoration: const InputDecoration(labelText: 'Background image fit'),
+                          items: const [
+                            DropdownMenuItem(value: BoxFit.cover, child: Text('Cover')),
+                            DropdownMenuItem(value: BoxFit.contain, child: Text('Contain')),
+                            DropdownMenuItem(value: BoxFit.fill, child: Text('Fill')),
+                          ],
+                          onChanged: (v) { if (v != null) { setState(() => _backgroundFit = v); refreshSheet(() {}); } },
+                        ),
+                        const SizedBox(height: 8),
+                        SegmentedButton<bool>(
+                          segments: const [
+                            ButtonSegment(value: true, label: Text('Horizontal'), icon: Icon(Icons.stay_current_landscape)),
+                            ButtonSegment(value: false, label: Text('Vertical'), icon: Icon(Icons.stay_current_portrait)),
+                          ],
+                          selected: {_landscapePreview},
+                          onSelectionChanged: (s) { setState(() => _landscapePreview = s.first); refreshSheet(() {}); },
+                        ),
+                      ]),
+                    ),
+                    _studioCard(
+                      icon: Icons.wallpaper_rounded,
+                      title: 'BACKGROUND',
+                      subtitle: 'নিজের ছবি বেছে নিন',
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                        OutlinedButton.icon(onPressed: () async { await _pickBackground(); refreshSheet(() {}); }, icon: const Icon(Icons.photo_library_outlined), label: const Text('Choose background image')),
+                        if (_backgroundImage != null) TextButton.icon(onPressed: () { setState(() { _backgroundImage = null; _backgroundOffset = Offset.zero; }); refreshSheet(() {}); }, icon: const Icon(Icons.delete_outline), label: const Text('Remove background image')),
+                      ]),
+                    ),
+                    _studioCard(
+                      icon: Icons.auto_awesome_rounded,
+                      title: 'ANIMATION EFFECTS',
+                      subtitle: 'ইফেক্ট বেছে নিন বা অটো চালু রাখুন',
+                      child: Column(children: [
+                        DropdownButtonFormField<String>(
+                          value: _effect,
+                          decoration: const InputDecoration(labelText: 'Animation effect'),
+                          items: _effects.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                          onChanged: (v) { if (v != null) { setState(() { _effect = v; _autoEffects = false; }); refreshSheet(() {}); } },
+                        ),
+                        SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('Auto change effects'), value: _autoEffects, onChanged: (v) { setState(() => _autoEffects = v); refreshSheet(() {}); }),
+                        SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('Auto change text/background'), value: _isRunning, onChanged: (v) { setState(() { _isRunning = v; _statusMessage = v ? 'Animation resumed.' : 'Animation paused.'; }); refreshSheet(() {}); }),
+                      ]),
+                    ),
+                    _studioCard(
+                      icon: Icons.music_note_rounded,
+                      title: 'MUSIC',
+                      subtitle: _musicFileName ?? 'ফোন থেকে গান নির্বাচন করুন',
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                        OutlinedButton.icon(onPressed: () async { await _pickMusic(); refreshSheet(() {}); }, icon: const Icon(Icons.folder_open_rounded), label: Text(_musicFileName == null ? 'Choose music' : 'Change music')),
+                        FilledButton.icon(onPressed: () async { await _toggleMusic(); refreshSheet(() {}); }, icon: Icon(_musicPlaying ? Icons.pause : Icons.play_arrow), label: Text(_musicPlaying ? 'Pause music' : 'Play music')),
+                        SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('Loop music'), value: _musicLoop, onChanged: (v) async { setState(() => _musicLoop = v); if (_musicPlaying) await _musicPlayer.setReleaseMode(v ? ReleaseMode.loop : ReleaseMode.stop); refreshSheet(() {}); }),
+                        const Text('গান বর্তমানে এই ডিভাইসে বাজে; Facebook Live-এ অডিও যাচ্ছে কি না আলাদাভাবে পরীক্ষা দরকার।', style: TextStyle(color: Colors.white60, fontSize: 12)),
+                      ]),
+                    ),
+                    _studioCard(
+                      icon: Icons.settings_input_antenna_rounded,
+                      title: 'FACEBOOK LIVE SETUP',
+                      subtitle: _rtmpsServer == null ? 'RTMPS not configured' : 'RTMPS server configured',
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                        OutlinedButton.icon(onPressed: _configureStreamSettings, icon: const Icon(Icons.link), label: const Text('Configure RTMPS server & key')),
+                        const Text('Stream key এই সেশনে মেমরিতে থাকে; অ্যাপ বন্ধ হলে মুছে যায়।', style: TextStyle(color: Colors.white60, fontSize: 12)),
+                      ]),
+                    ),
+                    _studioCard(
+                      icon: Icons.live_tv_rounded,
+                      title: 'LIVE CONTROL',
+                      subtitle: 'লাইভ স্ট্যাটাস ও কন্ট্রোল',
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                        Text(_statusMessage, style: const TextStyle(color: Colors.white70)),
+                        const SizedBox(height: 10),
+                        FilledButton.icon(
+                          onPressed: _isBusy ? null : () async { if (_isStreaming) { await _stopLive(); } else { await _startLive(); } refreshSheet(() {}); },
+                          icon: Icon(_isStreaming ? Icons.stop_circle : Icons.live_tv),
+                          label: Text(_isBusy ? 'Please wait…' : _isStreaming ? 'Stop Live' : 'Start Live'),
+                        ),
+                      ]),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFF080D1B),
       appBar: AppBar(
-        title: const Text('✦ AIZORA  INFINITE TEXT LIVE', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, letterSpacing: 0.5)),
+        title: const Text('AIZORA', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, letterSpacing: 2)),
         centerTitle: true,
         backgroundColor: const Color(0xFF101A30),
         foregroundColor: Colors.white,
+        actions: [
+          IconButton(tooltip: 'Settings', onPressed: _openSettings, icon: const Icon(Icons.tune_rounded)),
+        ],
       ),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: LayoutBuilder(builder: (context, constraints) => SingleChildScrollView(
-            child: Column(
+          padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
+          child: Column(
             children: [
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(colors: [Color(0xFF1E1B4B), Color(0xFF172554)]),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: const Color(0xFF6366F1).withValues(alpha: 0.5)),
-                ),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  const Text('YOUR LIVE STUDIO', style: TextStyle(color: Color(0xFF67E8F9), fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 2)),
-                  const SizedBox(height: 6),
-                  const Text('Create • Animate • Go Live', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800)),
-                  const SizedBox(height: 5),
-                  Text(_isStreaming ? '● LIVE' : '● READY TO CREATE', style: TextStyle(color: _isStreaming ? const Color(0xFFFB7185) : const Color(0xFF4ADE80), fontWeight: FontWeight.bold)),
-                ]),
+              Row(
+                children: [
+                  const Expanded(child: Text('INFINITE TEXT LIVE', style: TextStyle(color: Color(0xFF67E8F9), fontSize: 12, fontWeight: FontWeight.w800, letterSpacing: 2))),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(color: _isStreaming ? const Color(0xFF7F1D1D) : const Color(0xFF12352D), borderRadius: BorderRadius.circular(20)),
+                    child: Text(_isStreaming ? '● LIVE' : '● READY', style: TextStyle(color: _isStreaming ? const Color(0xFFFDA4AF) : const Color(0xFF4ADE80), fontSize: 11, fontWeight: FontWeight.bold)),
+                  ),
+                ],
               ),
-              const SizedBox(height: 12),
-              _buildNavigationPanel(),
-              const SizedBox(height: 12),
-              if (_studioTab == 'Settings')
-                _studioCard(
-                  icon: Icons.tune_rounded,
-                  title: 'ALL SETTINGS',
-                  subtitle: 'যে সেটিং পরিবর্তন করতে চান সেটি বেছে নিন',
-                  child: LayoutBuilder(builder: (context, constraints) {
-                    const settingsItems = <(String, String, IconData, String)>[
-                      ('Editor', 'Text & Canvas', Icons.text_fields_rounded, 'লেখা, ফন্ট, রং, বর্ডার ও ক্যানভাস'),
-                      ('Background', 'Background', Icons.wallpaper_rounded, 'ছবি, ফিট ও ব্যাকগ্রাউন্ড'),
-                      ('Animation', 'Animation Effects', Icons.auto_awesome_rounded, '১২টি অ্যানিমেশন ও অটো ইফেক্ট'),
-                      ('Music', 'Music', Icons.music_note_rounded, 'ফোন থেকে গান ও লুপ'),
-                      ('Live Setup', 'Facebook Live Setup', Icons.settings_input_antenna_rounded, 'RTMPS সার্ভার ও স্ট্রিম কী'),
-                      ('Live Control', 'Live Control', Icons.live_tv_rounded, 'লাইভ কন্ট্রোল ও স্ট্যাটাস'),
-                    ];
-                    final columns = constraints.maxWidth < 340 ? 1 : 2;
-                    final width = (constraints.maxWidth - (columns - 1) * 8) / columns;
-                    return Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        for (final item in settingsItems)
-                          SizedBox(
-                            width: width,
-                            child: OutlinedButton(
-                              onPressed: () => setState(() {
-                                _studioTab = item.$1;
-                                _showSettings = true;
-                              }),
-                              style: OutlinedButton.styleFrom(
-                                alignment: Alignment.centerLeft,
-                                padding: const EdgeInsets.all(12),
-                              ),
-                              child: Row(children: [
-                                Icon(item.$3, color: const Color(0xFF67E8F9)),
-                                const SizedBox(width: 10),
-                                Expanded(child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(item.$2, style: const TextStyle(fontWeight: FontWeight.w700)),
-                                    const SizedBox(height: 3),
-                                    Text(item.$4, style: const TextStyle(fontSize: 11, color: Colors.white60)),
-                                  ],
-                                )),
-                              ]),
-                            ),
-                          ),
-                      ],
-                    );
-                  }),
-                ),
-              if (_studioTab == 'Home')
-                _studioCard(
-                  icon: Icons.dashboard_rounded,
-                  title: 'HOME DASHBOARD',
-                  subtitle: 'আপনার টেক্সট লাইভ স্টুডিওর সব টুল এক জায়গায়',
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                    Row(children: [
-                      Expanded(child: _dashboardMetric(Icons.text_fields_rounded, 'Text layers', '01')),
-                      const SizedBox(width: 8),
-                      Expanded(child: _dashboardMetric(Icons.auto_awesome_rounded, 'Effects', '${_effects.length}')),
-                    ]),
-                    const SizedBox(height: 12),
-                    Row(children: [
-                      Expanded(child: _dashboardMetric(Icons.image_rounded, 'Background', _backgroundImage == null ? 'Gradient' : 'Photo')),
-                      const SizedBox(width: 8),
-                      Expanded(child: _dashboardMetric(Icons.wifi_tethering_rounded, 'Live status', _isStreaming ? 'LIVE' : 'Ready')),
-                    ]),
-                    const SizedBox(height: 14),
-                    const Text('QUICK ACTIONS', style: TextStyle(color: Color(0xFF9FB0D8), fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 1.2)),
-                    const SizedBox(height: 8),
-                    Wrap(spacing: 8, runSpacing: 8, children: [
-                      _quickAction('Edit text', Icons.edit_rounded, 'Editor'),
-                      _quickAction('All settings', Icons.tune_rounded, 'Settings'),
-                      _quickAction('Go Live', Icons.live_tv_rounded, 'Live Control'),
-                    ]),
-                  ]),
-                ),
-              if (_studioTab == 'Background')
-                _studioCard(
-                  icon: Icons.wallpaper_rounded,
-                  title: 'BACKGROUND STUDIO',
-                  subtitle: 'ছবি নির্বাচন করুন, প্রিভিউ দেখুন এবং ক্যানভাসে অবস্থান ঠিক করুন',
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(16),
-                        child: AspectRatio(
-                          aspectRatio: 16 / 9,
-                          child: Stack(
-                            fit: StackFit.expand,
-                            children: [
-                              DecoratedBox(
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                    colors: _backgrounds[_backgroundIndex % _backgrounds.length],
-                                  ),
-                                ),
-                              ),
-                              if (_backgroundImage != null)
-                                Image.memory(_backgroundImage!, fit: _backgroundFit),
-                              if (_backgroundImage == null)
-                                const Center(
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(Icons.add_photo_alternate_outlined, size: 38, color: Colors.white70),
-                                      SizedBox(height: 8),
-                                      Text('No photo selected', style: TextStyle(color: Colors.white70)),
-                                    ],
-                                  ),
-                                ),
-                              Positioned(
-                                left: 10,
-                                right: 10,
-                                bottom: 10,
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-                                  decoration: BoxDecoration(
-                                    color: Colors.black.withValues(alpha: 0.55),
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  child: Text(
-                                    _backgroundImage == null ? 'Gradient background' : (_musicFileName == null ? 'Custom background photo' : 'Custom background photo'),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(fontSize: 12, color: Colors.white),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      FilledButton.icon(
-                        onPressed: _pickBackground,
-                        icon: const Icon(Icons.add_photo_alternate_rounded),
-                        label: Text(_backgroundImage == null ? 'Choose photo from phone' : 'Change background photo'),
-                      ),
-                      if (_backgroundImage != null) ...[
-                        const SizedBox(height: 8),
-                        OutlinedButton.icon(
-                          onPressed: () => setState(() {
-                            _backgroundImage = null;
-                            _backgroundOffset = Offset.zero;
-                            _selectedCanvasLayer = 'Background';
-                            _statusMessage = 'Background photo removed';
-                          }),
-                          icon: const Icon(Icons.delete_outline_rounded),
-                          label: const Text('Remove photo'),
-                        ),
-                      ],
-                      const SizedBox(height: 14),
-                      DropdownButtonFormField<BoxFit>(
-                        initialValue: _backgroundFit,
-                        decoration: const InputDecoration(
-                          labelText: 'Photo fit',
-                          helperText: 'Cover crops edges • Contain shows full image • Fill stretches',
-                          border: OutlineInputBorder(),
-                        ),
-                        items: const [
-                          DropdownMenuItem(value: BoxFit.cover, child: Text('Cover — fill canvas')),
-                          DropdownMenuItem(value: BoxFit.contain, child: Text('Contain — show whole photo')),
-                          DropdownMenuItem(value: BoxFit.fill, child: Text('Fill — stretch to canvas')),
-                        ],
-                        onChanged: (value) {
-                          if (value != null) setState(() => _backgroundFit = value);
-                        },
-                      ),
-                      const SizedBox(height: 10),
-                      SwitchListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: const Text('Select background layer'),
-                        subtitle: const Text('এটি চালু থাকলে প্রিভিউতে ব্যাকগ্রাউন্ড টেনে সরানো যাবে'),
-                        value: _selectedCanvasLayer == 'Background',
-                        onChanged: (value) => setState(() {
-                          _selectedCanvasLayer = value ? 'Background' : 'Text';
-                        }),
-                      ),
-                      OutlinedButton.icon(
-                        onPressed: () => setState(() {
-                          _backgroundOffset = Offset.zero;
-                          _selectedCanvasLayer = 'Background';
-                          _statusMessage = 'Background position reset';
-                        }),
-                        icon: const Icon(Icons.center_focus_strong_rounded),
-                        label: const Text('Reset background position'),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        _backgroundImage == null
-                            ? 'এখন গ্রেডিয়েন্ট ব্যাকগ্রাউন্ড ব্যবহার হচ্ছে।'
-                            : 'Selected: background photo is stored in app memory for this session.',
-                        style: const TextStyle(color: Colors.white60, fontSize: 12),
-                      ),
-                    ],
-                  ),
-                ),
-              if (_studioTab == 'Music')
-                _studioCard(
-                  icon: Icons.graphic_eq_rounded,
-                  title: 'MUSIC STUDIO',
-                  subtitle: 'আপনার লাইভ ক্যানভাসের জন্য ব্যাকগ্রাউন্ড মিউজিক',
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(18),
-                          gradient: const LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [Color(0xFF172B58), Color(0xFF38246C), Color(0xFF14213D)],
-                          ),
-                          border: Border.all(color: const Color(0xFF8B7CFF).withValues(alpha: 0.35)),
-                        ),
-                        child: Column(
-                          children: [
-                            Container(
-                              width: 68,
-                              height: 68,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                gradient: const LinearGradient(colors: [Color(0xFF48C6EF), Color(0xFF8B5CF6)]),
-                                boxShadow: [BoxShadow(color: const Color(0xFF7165FF).withValues(alpha: 0.28), blurRadius: 24, spreadRadius: 2)],
-                              ),
-                              child: Icon(_musicPlaying ? Icons.graphic_eq_rounded : Icons.music_note_rounded, size: 34, color: Colors.white),
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              _musicFileName ?? 'No audio selected',
-                              textAlign: TextAlign.center,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white),
-                            ),
-                            const SizedBox(height: 5),
-                            Text(
-                              _musicFileName == null ? 'Choose a file from your phone' : (_musicPlaying ? 'NOW PLAYING ON THIS DEVICE' : 'AUDIO READY'),
-                              style: const TextStyle(fontSize: 10, letterSpacing: 1.1, color: Color(0xFFB8C5FF)),
-                            ),
-                            const SizedBox(height: 16),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: List.generate(27, (i) {
-                                final heights = [10.0, 17.0, 24.0, 14.0, 30.0, 19.0, 12.0, 26.0, 34.0, 16.0, 23.0, 12.0, 29.0, 18.0, 35.0, 14.0, 24.0, 10.0, 20.0, 31.0, 15.0, 26.0, 12.0, 22.0, 33.0, 17.0, 11.0];
-                                return Container(
-                                  width: 4,
-                                  height: heights[i],
-                                  margin: const EdgeInsets.symmetric(horizontal: 2),
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(4),
-                                    gradient: LinearGradient(
-                                      begin: Alignment.bottomCenter,
-                                      end: Alignment.topCenter,
-                                      colors: _musicPlaying
-                                          ? const [Color(0xFF48C6EF), Color(0xFFC084FC)]
-                                          : [const Color(0xFF7890C9).withValues(alpha: 0.65), const Color(0xFF7890C9).withValues(alpha: 0.25)],
-                                    ),
-                                  ),
-                                );
-                              }),
-                            ),
-                            const SizedBox(height: 16),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                IconButton.filledTonal(
-                                  tooltip: 'Stop music',
-                                  onPressed: () async {
-                                    await _musicPlayer.stop();
-                                    if (mounted) setState(() => _musicPlaying = false);
-                                  },
-                                  icon: const Icon(Icons.stop_rounded),
-                                ),
-                                const SizedBox(width: 14),
-                                SizedBox(
-                                  width: 58,
-                                  height: 58,
-                                  child: FilledButton(
-                                    style: FilledButton.styleFrom(
-                                      shape: const CircleBorder(),
-                                      padding: EdgeInsets.zero,
-                                      backgroundColor: const Color(0xFF7667F8),
-                                    ),
-                                    onPressed: _toggleMusic,
-                                    child: Icon(_musicPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded, size: 34),
-                                  ),
-                                ),
-                                const SizedBox(width: 14),
-                                IconButton.filledTonal(
-                                  tooltip: 'Choose or change audio',
-                                  onPressed: _pickMusic,
-                                  icon: const Icon(Icons.library_music_rounded),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      OutlinedButton.icon(
-                        onPressed: _pickMusic,
-                        icon: const Icon(Icons.folder_open_rounded),
-                        label: Text(_musicFileName == null ? 'Choose audio from phone' : 'Change audio file'),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.04),
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-                        ),
-                        child: SwitchListTile(
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 14),
-                          secondary: const Icon(Icons.repeat_rounded, color: Color(0xFF8B7CFF)),
-                          title: const Text('Loop music', style: TextStyle(fontWeight: FontWeight.w600)),
-                          subtitle: const Text('Automatically repeat the selected track'),
-                          value: _musicLoop,
-                          onChanged: (v) async {
-                            setState(() => _musicLoop = v);
-                            if (_musicPlaying) await _musicPlayer.setReleaseMode(v ? ReleaseMode.loop : ReleaseMode.stop);
-                          },
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Row(
-                        children: [
-                          const Icon(Icons.info_outline_rounded, size: 16, color: Color(0xFF9FB0D8)),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              'Music playback is currently on this device. Live audio publishing must be verified separately.',
-                              style: TextStyle(color: Colors.white.withValues(alpha: 0.62), fontSize: 11, height: 1.4),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              if (_studioTab == 'Live Setup')
-                _studioCard(icon: Icons.settings_input_antenna, title: 'FACEBOOK LIVE SETUP', subtitle: 'RTMPS credentials are held in memory for this session.', child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [OutlinedButton.icon(onPressed: _configureStreamSettings, icon: const Icon(Icons.link), label: const Text('Configure RTMPS Server & Key')), Text(_rtmpsServer == null ? 'RTMPS: Not configured' : 'RTMPS server configured', style: const TextStyle(color: Colors.white70)), const SizedBox(height: 8), const Text('Security: Stream Key is not shown or saved to disk.', style: TextStyle(color: Colors.white54))])),
-              if (_studioTab == 'Live Control')
-                _studioCard(icon: Icons.live_tv, title: 'LIVE CONTROL', subtitle: 'Live publishing status is reported by the native publisher.', child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: const Color(0xFF0B1222), borderRadius: BorderRadius.circular(14)), child: Text(_statusMessage)), const SizedBox(height: 10), FilledButton.icon(onPressed: _isBusy ? null : _isStreaming ? _stopLive : _startLive, icon: Icon(_isStreaming ? Icons.stop_circle : Icons.live_tv), label: Text(_isBusy ? 'Please wait…' : _isStreaming ? 'Stop Live' : 'Start Live'))])),
-              if (_studioTab == 'Live Setup' || _studioTab == 'Live Control')
-                const SizedBox(height: 8),
-              if (_studioTab == 'Animation')
-                Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(children: [
-                  const Text('ANIMATION EFFECTS', style: TextStyle(fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 8),
-                  Wrap(spacing: 7, runSpacing: 7, children: [
-                    for (final fx in _effects)
-                      ChoiceChip(label: Text(fx), selected: _effect == fx,
-                        onSelected: (_) => setState(() { _effect = fx; _autoEffects = false; })),
-                  ]),
-                ]))),
-              if (['Home', 'Editor', 'Animation', 'Live Control'].contains(_studioTab)) ...[
-              const SizedBox(height: 14),
-              const Align(alignment: Alignment.centerLeft, child: Text('✦  LIVE SCENE PREVIEW', style: TextStyle(color: Color(0xFF67E8F9), fontWeight: FontWeight.bold, letterSpacing: 1.2))),
               const SizedBox(height: 10),
-              SizedBox(
-                height: (constraints.maxHeight * 0.48).clamp(180.0, 430.0),
-                width: double.infinity,
+              Expanded(
                 child: Center(
                   child: AspectRatio(
                     aspectRatio: _landscapePreview ? 16 / 9 : 9 / 16,
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(22),
-                      child: _buildText(),
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          border: Border.all(color: const Color(0xFF6366F1), width: 1.5),
+                          borderRadius: BorderRadius.circular(22),
+                        ),
+                        child: _buildText(),
+                      ),
                     ),
                   ),
                 ),
               ),
               const SizedBox(height: 12),
-              SegmentedButton<bool>(
-                segments: const [
-                  ButtonSegment(value: true, label: Text('Horizontal'), icon: Icon(Icons.stay_current_landscape)),
-                  ButtonSegment(value: false, label: Text('Vertical'), icon: Icon(Icons.stay_current_portrait)),
-                ],
-                selected: {_landscapePreview},
-                onSelectionChanged: (selection) => setState(() => _landscapePreview = selection.first),
-              ),
-              const SizedBox(height: 12),
-              Wrap(
-                alignment: WrapAlignment.center,
-                spacing: 12,
-                runSpacing: 12,
+              Row(
                 children: [
-                  OutlinedButton.icon(onPressed: _pickBackground, icon: const Icon(Icons.image), label: const Text('Photo')),
-                  if (_backgroundImage != null) TextButton(onPressed: () => setState(() => _backgroundImage = null), child: const Text('Clear')),
-                  FilledButton.icon(
-                    onPressed: _isBusy ? null : _isStreaming ? _stopLive : _startLive,
-                    icon: Icon(_isStreaming ? Icons.stop : Icons.live_tv),
-                    style: FilledButton.styleFrom(backgroundColor: _isStreaming ? const Color(0xFFB91C1C) : const Color(0xFF0891B2)),
-                    label: Text(_isStreaming ? 'Stop Live' : 'Start Live'),
-                  ),
-                  OutlinedButton.icon(
-                    onPressed: () => setState(() => _showSettings = !_showSettings),
-                    icon: const Icon(Icons.tune),
-                    label: Text(_showSettings ? 'Hide settings' : 'Settings'),
-                  ),
+                  Expanded(child: OutlinedButton.icon(onPressed: () => setState(() => _isRunning = !_isRunning), icon: Icon(_isRunning ? Icons.pause_rounded : Icons.play_arrow_rounded), label: Text(_isRunning ? 'Pause animation' : 'Resume animation'))),
+                  const SizedBox(width: 10),
+                  Expanded(child: FilledButton.icon(onPressed: _openSettings, icon: const Icon(Icons.tune_rounded), label: const Text('Settings'))),
                 ],
               ),
-              if (_showSettings && (_studioTab == 'Editor' || _studioTab == 'Settings'))
-                SingleChildScrollView(child: Column(children: [
-              Row(children: [
-                const Icon(Icons.animation, color: Color(0xFF67E8F9)),
-                const SizedBox(width: 8),
-                Expanded(child: DropdownButton<String>(
-                  isExpanded: true, value: _effect,
-                  items: _effects.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-                  onChanged: (v) { if (v != null) setState(() { _effect = v; _autoEffects = false; }); },
-                )),
-                FilterChip(label: const Text('Auto FX'), selected: _autoEffects,
-                    onSelected: (v) => setState(() => _autoEffects = v)),
-              ]),
-              ...[
-                const SizedBox(height: 8),
-                const Align(alignment: Alignment.centerLeft, child: Text('ANIMATION & TEXT', style: TextStyle(color: Color(0xFF67E8F9), fontWeight: FontWeight.bold, letterSpacing: 1.0))),
-                const SizedBox(height: 6),
-                Card(
-                  color: const Color(0xFF111B2E),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      const Text('লাইভে দেখানোর লেখা', style: TextStyle(fontWeight: FontWeight.w600)),
-                      const SizedBox(height: 6),
-                      TextFormField(
-                        key: ValueKey('customText-$_customText'),
-                        initialValue: _customText,
-                        minLines: 2,
-                        maxLines: 4,
-                        maxLength: 500,
-                        decoration: const InputDecoration(hintText: 'এখানে নিজের বাংলা বা English লেখা লিখুন', prefixIcon: Icon(Icons.edit_note), border: OutlineInputBorder(), helperText: 'খালি রাখলে স্বয়ংক্রিয় লেখা চলবে'),
-                        onChanged: (v) => setState(() => _customText = v),
-                      ),
-                      const SizedBox(height: 10),
-                      const Text('লাইভ স্ক্রিনের উপরের নাম', style: TextStyle(fontWeight: FontWeight.w600)),
-                      const SizedBox(height: 6),
-                      TextFormField(
-                        key: ValueKey(_liveTitle),
-                        initialValue: _liveTitle,
-                        maxLength: 40,
-                        decoration: const InputDecoration(hintText: 'যেমন: AIZORA TEXT LIVE', prefixIcon: Icon(Icons.title), border: OutlineInputBorder(), counterText: ''),
-                        onChanged: (v) => setState(() => _liveTitle = v),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text('লেখার বর্ডার', style: TextStyle(fontWeight: FontWeight.w600)),
-                      SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('বর্ডার দেখাও'), value: _showTextBorder, onChanged: (v) => setState(() => _showTextBorder = v)),
-                      Wrap(spacing: 8, children: [
-                        for (final color in [const Color(0xFF67E8F9), Colors.white, const Color(0xFFFBBF24), const Color(0xFFF472B6), const Color(0xFF4ADE80), Colors.red])
-                          InkWell(onTap: () => setState(() => _textBorderColor = color), child: Container(width: 32, height: 32, decoration: BoxDecoration(color: color, shape: BoxShape.circle, border: Border.all(color: _textBorderColor == color ? Colors.white : Colors.white24, width: _textBorderColor == color ? 3 : 1)))),
-                      ]),
-                      Row(children: [const Text('বর্ডারের পুরুত্ব'), const Spacer(), Text(_textBorderWidth.toStringAsFixed(1))]),
-                      Slider(value: _textBorderWidth, min: 1, max: 6, divisions: 10, onChanged: (v) => setState(() => _textBorderWidth = v)),
-                      Row(children: [const Text('কোণ গোল করার মাত্রা'), const Spacer(), Text('${_textBorderRadius.round()}')]),
-                      Slider(value: _textBorderRadius, min: 0, max: 40, divisions: 8, onChanged: (v) => setState(() => _textBorderRadius = v)),
-                      const SizedBox(height: 8),
-                      const Text('Canvas Touch & Pan', style: TextStyle(fontWeight: FontWeight.w600)),
-                      SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('Pan ON/OFF'), value: _canvasPanEnabled, onChanged: (v) => setState(() => _canvasPanEnabled = v)),
-                      DropdownButtonFormField<String>(
-                        initialValue: _selectedCanvasLayer,
-                        decoration: const InputDecoration(labelText: 'Selected layer', border: OutlineInputBorder()),
-                        items: const [
-                          DropdownMenuItem(value: 'Text', child: Text('Text')),
-                          DropdownMenuItem(value: 'Background', child: Text('Background')),
-                        ],
-                        onChanged: (v) { if (v != null) setState(() => _selectedCanvasLayer = v); },
-                      ),
-                      TextButton.icon(onPressed: () => setState(() {
-                        if (_selectedCanvasLayer == 'Text') { _textOffset = Offset.zero; }
-                        else { _backgroundOffset = Offset.zero; }
-                      }), icon: const Icon(Icons.restart_alt), label: const Text('Reset selected layer')),
-                      const Text('লেখার অবস্থান', style: TextStyle(fontWeight: FontWeight.w600)),
-                      const Text('প্রিভিউতে লেখার উপর আঙুল চেপে ধরে টেনে পছন্দমতো জায়গায় বসান।'),
-                      Align(alignment: Alignment.centerRight, child: TextButton.icon(onPressed: () => setState(() => _textOffset = Offset.zero), icon: const Icon(Icons.center_focus_strong), label: const Text('মাঝখানে ফেরত আনুন'))),
-                      const SizedBox(height: 8),
-                      const Text('লেখার রং', style: TextStyle(fontWeight: FontWeight.w600)),
-                      Wrap(spacing: 8, children: [for (final color in [Colors.white, const Color(0xFF67E8F9), const Color(0xFFFBBF24), const Color(0xFFF472B6), const Color(0xFF4ADE80), Colors.red]) InkWell(onTap: () => setState(() => _textColor = color), child: Container(width: 32, height: 32, decoration: BoxDecoration(color: color, shape: BoxShape.circle, border: Border.all(color: _textColor == color ? Colors.white : Colors.white24, width: _textColor == color ? 3 : 1))))]),
-                      const SizedBox(height: 8),
-                      const Text('ব্যাকগ্রাউন্ড ছবি ক্রপ', style: TextStyle(fontWeight: FontWeight.w600)),
-                      DropdownButtonFormField<BoxFit>(
-                        initialValue: _backgroundFit,
-                        decoration: const InputDecoration(border: OutlineInputBorder(), prefixIcon: Icon(Icons.crop)),
-                        items: const [
-                          DropdownMenuItem(value: BoxFit.cover, child: Text('Cover — স্ক্রিন ভরে ক্রপ')),
-                          DropdownMenuItem(value: BoxFit.contain, child: Text('Contain — পুরো ছবি দেখাবে')),
-                          DropdownMenuItem(value: BoxFit.fill, child: Text('Fill — স্ক্রিন অনুযায়ী টানবে')),
-                        ],
-                        onChanged: (v) { if (v != null) setState(() => _backgroundFit = v); },
-                      ),
-                      const SizedBox(height: 8),
-                      const Text('Font family', style: TextStyle(fontWeight: FontWeight.w600)),
-                      const SizedBox(height: 6),
-                      DropdownButtonFormField<String>(
-                        initialValue: _fontFamily,
-                        isExpanded: true,
-                        decoration: const InputDecoration(border: OutlineInputBorder(), prefixIcon: Icon(Icons.font_download_outlined)),
-                        items: const [
-                          DropdownMenuItem(value: 'Roboto', child: Text('Roboto')),
-                          DropdownMenuItem(value: 'System', child: Text('System default')),
-                          DropdownMenuItem(value: 'sans-serif', child: Text('Sans Serif')),
-                          DropdownMenuItem(value: 'serif', child: Text('Serif')),
-                          DropdownMenuItem(value: 'monospace', child: Text('Monospace')),
-                        ],
-                        onChanged: (v) { if (v != null) setState(() => _fontFamily = v); },
-                      ),
-                      const SizedBox(height: 10),
-                      Row(children: [const Icon(Icons.format_size, color: Color(0xFF67E8F9)), const SizedBox(width: 8), const Text('Text size'), const Spacer(), Text('${_textFontSize.round()} px')]),
-                      Slider(value: _textFontSize, min: 20, max: 52, divisions: 16, label: _textFontSize.round().toString(), onChanged: (v) => setState(() => _textFontSize = v)),
-                      SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('Auto change effects'), subtitle: const Text('প্রতি ৩ সেকেন্ডে ইফেক্ট বদলাবে'), value: _autoEffects, onChanged: (v) => setState(() => _autoEffects = v)),
-                      SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('Auto change text/background'), subtitle: const Text('অ্যানিমেশন চালু বা বন্ধ করুন নিচের বাটন থেকে'), value: _isRunning, onChanged: (v) => setState(() { _isRunning = v; _statusMessage = v ? 'Animation resumed.' : 'Animation paused.'; })),
-                    ]),
-                  ),
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: _isBusy ? null : _isStreaming ? _stopLive : _startLive,
+                  style: FilledButton.styleFrom(backgroundColor: _isStreaming ? const Color(0xFFB91C1C) : const Color(0xFF7C3AED)),
+                  icon: Icon(_isStreaming ? Icons.stop_circle_outlined : Icons.wifi_tethering_rounded),
+                  label: Text(_isBusy ? 'Please wait…' : _isStreaming ? 'Stop Facebook Live' : 'Go Live'),
                 ),
-                const SizedBox(height: 8),
-                const Align(alignment: Alignment.centerLeft, child: Text('FACEBOOK LIVE', style: TextStyle(color: Color(0xFF67E8F9), fontWeight: FontWeight.bold, letterSpacing: 1.0))),
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: _configureStreamSettings,
-                        icon: const Icon(Icons.link),
-                        label: const Text('Set RTMPS'),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                  ],
-                ),
-              ],
-                ])),
-              ],
-              const SizedBox(height: 12),
-              Text(
-                _statusMessage,
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 14, color: Colors.white70),
               ),
+              const SizedBox(height: 8),
+              Text(_statusMessage, maxLines: 2, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white60, fontSize: 11)),
             ],
           ),
-          )),
         ),
       ),
     );
