@@ -13,22 +13,16 @@ void main() {
     expect(find.text('তোমার হাসিতে আমার পৃথিবী সুন্দর।'), findsOneWidget);
   });
 
-  testWidgets('Animation can be paused and resumed from settings', (tester) async {
+  testWidgets('Animation can be paused and resumed from the main screen', (tester) async {
     await tester.pumpWidget(const AizoraApp());
-    await tester.tap(find.byTooltip('Settings'));
-    await tester.pump(const Duration(milliseconds: 300));
 
-    final toggle = find.text('Auto change text/background');
-    await tester.ensureVisible(toggle);
-    await tester.tap(toggle);
+    await tester.tap(find.text('Pause animation'));
     await tester.pump();
-
     await tester.pump(const Duration(seconds: 3));
     await tester.pump();
     expect(find.text('ভালোবাসা মানে একে অপরের পাশে থাকা।'), findsOneWidget);
 
-    await tester.ensureVisible(toggle);
-    await tester.tap(toggle);
+    await tester.tap(find.text('Resume animation'));
     await tester.pump();
     await tester.pump(const Duration(seconds: 3));
     await tester.pump();
