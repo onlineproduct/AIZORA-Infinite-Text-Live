@@ -54,6 +54,8 @@ class _AizoraHomePageState extends State<AizoraHomePage>
   bool _autoEffects = true;
   bool _landscapePreview = true;
   double _textFontSize = 34;
+  String _liveTitle = 'AIZORA TEXT LIVE';
+  BoxFit _backgroundFit = BoxFit.cover;
   static const _effects = ['Fade', 'Slide Up', 'Slide Left', 'Zoom', 'Pulse', 'Rotate', 'Flip', 'Bounce', 'Shake', 'Wave', 'Typewriter', 'Glow'];
 
   final List<String> _texts = [
@@ -264,7 +266,17 @@ class _AizoraHomePageState extends State<AizoraHomePage>
           ),
         ),
         child: Stack(fit: StackFit.expand, children: [
-          if (_backgroundImage != null) Image.memory(_backgroundImage!, fit: BoxFit.cover),
+          if (_backgroundImage != null) Image.memory(_backgroundImage!, fit: _backgroundFit),
+          if (_liveTitle.trim().isNotEmpty)
+            Positioned(
+              top: 12, left: 12, right: 12,
+              child: Center(child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.58), borderRadius: BorderRadius.circular(20)),
+                child: Text(_liveTitle.trim(), maxLines: 1, overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 1.0)),
+              )),
+            ),
           Center(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 32),
@@ -399,6 +411,28 @@ class _AizoraHomePageState extends State<AizoraHomePage>
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      const Text('লাইভ স্ক্রিনের উপরের নাম', style: TextStyle(fontWeight: FontWeight.w600)),
+                      const SizedBox(height: 6),
+                      TextFormField(
+                        key: ValueKey(_liveTitle),
+                        initialValue: _liveTitle,
+                        maxLength: 40,
+                        decoration: const InputDecoration(hintText: 'যেমন: AIZORA TEXT LIVE', prefixIcon: Icon(Icons.title), border: OutlineInputBorder(), counterText: ''),
+                        onChanged: (v) => setState(() => _liveTitle = v),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text('ব্যাকগ্রাউন্ড ছবি ক্রপ', style: TextStyle(fontWeight: FontWeight.w600)),
+                      DropdownButtonFormField<BoxFit>(
+                        value: _backgroundFit,
+                        decoration: const InputDecoration(border: OutlineInputBorder(), prefixIcon: Icon(Icons.crop)),
+                        items: const [
+                          DropdownMenuItem(value: BoxFit.cover, child: Text('Cover — স্ক্রিন ভরে ক্রপ')),
+                          DropdownMenuItem(value: BoxFit.contain, child: Text('Contain — পুরো ছবি দেখাবে')),
+                          DropdownMenuItem(value: BoxFit.fill, child: Text('Fill — স্ক্রিন অনুযায়ী টানবে')),
+                        ],
+                        onChanged: (v) { if (v != null) setState(() => _backgroundFit = v); },
+                      ),
+                      const SizedBox(height: 8),
                       Row(children: [const Icon(Icons.format_size, color: Color(0xFF67E8F9)), const SizedBox(width: 8), const Text('Text size'), const Spacer(), Text('${_textFontSize.round()} px')]),
                       Slider(value: _textFontSize, min: 20, max: 52, divisions: 16, label: _textFontSize.round().toString(), onChanged: (v) => setState(() => _textFontSize = v)),
                       SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('Auto change effects'), subtitle: const Text('প্রতি ৩ সেকেন্ডে ইফেক্ট বদলাবে'), value: _autoEffects, onChanged: (v) => setState(() => _autoEffects = v)),
