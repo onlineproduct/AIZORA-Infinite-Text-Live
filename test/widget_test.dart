@@ -16,7 +16,7 @@ void main() {
   testWidgets('Animation can be paused and resumed from settings', (tester) async {
     await tester.pumpWidget(const AizoraApp());
 
-    await tester.tap(find.text('Show settings'));
+    await tester.tap(find.text('Settings'));
     await tester.pump();
 
     expect(find.text('Pause animation'), findsOneWidget);
