@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:typed_data';
+import 'package:file_picker/file_picker.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -48,6 +50,10 @@ class _AizoraHomePageState extends State<AizoraHomePage>
   bool _isStreaming = false;
   bool _isBusy = false;
   bool _showSettings = false;
+  Uint8List? _backgroundImage;
+  String _effect = 'Fade';
+  bool _autoEffects = true;
+  static const _effects = ['Fade', 'Slide Up', 'Slide Left', 'Zoom', 'Pulse', 'Rotate', 'Flip', 'Bounce', 'Shake', 'Wave', 'Typewriter', 'Glow'];
 
   final List<String> _texts = [
     'ভালোবাসা মানে একে অপরের পাশে থাকা।',
@@ -80,6 +86,7 @@ class _AizoraHomePageState extends State<AizoraHomePage>
       setState(() {
         _textIndex = (_textIndex + 1) % _texts.length;
         _backgroundIndex = (_backgroundIndex + 1) % _backgrounds.length;
+        if (_autoEffects) _effect = _effects[(_effects.indexOf(_effect) + 1) % _effects.length];
       });
     });
   }
@@ -228,6 +235,18 @@ class _AizoraHomePageState extends State<AizoraHomePage>
     }
   }
 
+  Future<void> _pickBackground() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(type: FileType.image, withData: true);
+      if (!mounted || result == null) return;
+      final bytes = result.files.single.bytes;
+      if (bytes == null || bytes.isEmpty) return;
+      setState(() { _backgroundImage = bytes; _statusMessage = 'Background photo selected'; });
+    } catch (error) {
+      if (mounted) setState(() => _statusMessage = 'Photo selection failed: $error');
+    }
+  }
+
   Widget _buildText() {
     final text = _texts[_textIndex % _texts.length];
     final colors = _backgrounds[_backgroundIndex % _backgrounds.length];
@@ -243,7 +262,9 @@ class _AizoraHomePageState extends State<AizoraHomePage>
             colors: colors,
           ),
         ),
-        child: Center(
+        child: Stack(fit: StackFit.expand, children: [
+          if (_backgroundImage != null) Image.memory(_backgroundImage!, fit: BoxFit.cover),
+          Center(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 32),
             child: Container(
@@ -263,29 +284,39 @@ class _AizoraHomePageState extends State<AizoraHomePage>
               child: AnimatedBuilder(
                 animation: _textController,
                 builder: (context, child) {
-                  final alpha = 0.6 + (_textController.value * 0.4);
-                  return Text(
-                    text,
+                  final t = _textController.value;
+                  Widget label = Text(
+                    _effect == 'Typewriter' ? text.substring(0, (text.length * t).round()) : text,
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 34,
                       fontWeight: FontWeight.w800,
-                      color: Colors.white.withValues(alpha: alpha),
-                      shadows: const [
-                        Shadow(offset: Offset(-2, 0), color: Colors.black, blurRadius: 10),
-                        Shadow(offset: Offset(2, 0), color: Colors.black, blurRadius: 10),
-                        Shadow(offset: Offset(0, -2), color: Colors.black, blurRadius: 10),
-                        Shadow(offset: Offset(0, 2), color: Colors.black, blurRadius: 10),
+                      color: Colors.white.withValues(alpha: _effect == 'Fade' ? 0.25 + 0.75 * t : 1),
+                      shadows: [
+                        Shadow(color: _effect == 'Glow' ? const Color(0xFF67E8F9) : Colors.black,
+                            blurRadius: _effect == 'Glow' ? 8 + 24 * t : 10),
                       ],
-                      letterSpacing: 1.1,
-                      height: 1.2,
                     ),
                   );
+                  switch (_effect) {
+                    case 'Slide Up': label = Transform.translate(offset: Offset(0, 45 * (1-t)), child: label); break;
+                    case 'Slide Left': label = Transform.translate(offset: Offset(55 * (1-t), 0), child: label); break;
+                    case 'Zoom': label = Transform.scale(scale: 0.65 + 0.35*t, child: label); break;
+                    case 'Pulse': label = Transform.scale(scale: 0.9 + 0.2*t, child: label); break;
+                    case 'Rotate': label = Transform.rotate(angle: (t-0.5)*0.5, child: label); break;
+                    case 'Flip': label = Transform(alignment: Alignment.center, transform: Matrix4.identity()..setEntry(3,2,0.001)..rotateY((1-t)*1.2), child: label); break;
+                    case 'Bounce': label = Transform.translate(offset: Offset(0,-22*(1-(2*t-1)*(2*t-1))), child: label); break;
+                    case 'Shake': label = Transform.translate(offset: Offset(t<0.5 ? 5*t : -5*(1-t),0), child: label); break;
+                    case 'Wave': label = Transform.rotate(angle: (t-0.5)*0.2, child: label); break;
+                    default: break;
+                  }
+                  return label;
                 },
               ),
             ),
           ),
         ),
+        ]),
       ),
     );
   }
@@ -315,6 +346,8 @@ class _AizoraHomePageState extends State<AizoraHomePage>
                 spacing: 12,
                 runSpacing: 12,
                 children: [
+                  OutlinedButton.icon(onPressed: _pickBackground, icon: const Icon(Icons.image), label: const Text('Photo')),
+                  if (_backgroundImage != null) TextButton(onPressed: () => setState(() => _backgroundImage = null), child: const Text('Clear')),
                   FilledButton.icon(
                     onPressed: _isBusy ? null : _isStreaming ? _stopLive : _startLive,
                     icon: Icon(_isStreaming ? Icons.stop : Icons.live_tv),
@@ -328,6 +361,17 @@ class _AizoraHomePageState extends State<AizoraHomePage>
                   ),
                 ],
               ),
+              Row(children: [
+                const Icon(Icons.animation, color: Color(0xFF67E8F9)),
+                const SizedBox(width: 8),
+                Expanded(child: DropdownButton<String>(
+                  isExpanded: true, value: _effect,
+                  items: _effects.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                  onChanged: (v) { if (v != null) setState(() { _effect = v; _autoEffects = false; }); },
+                )),
+                FilterChip(label: const Text('Auto FX'), selected: _autoEffects,
+                    onSelected: (v) => setState(() => _autoEffects = v)),
+              ]),
               if (_showSettings) ...[
                 const SizedBox(height: 12),
                 Row(
