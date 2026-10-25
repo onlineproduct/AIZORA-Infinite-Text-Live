@@ -65,6 +65,7 @@ class _AizoraHomePageState extends State<AizoraHomePage>
   bool _autoEffects = true;
   bool _landscapePreview = true;
   double _textFontSize = 34;
+  String _fontFamily = 'Roboto';
   String _liveTitle = 'AIZORA TEXT LIVE';
   String _customText = '';
   BoxFit _backgroundFit = BoxFit.cover;
@@ -420,6 +421,7 @@ class _AizoraHomePageState extends State<AizoraHomePage>
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: _textFontSize,
+                      fontFamily: _fontFamily == 'System' ? null : _fontFamily,
                       fontWeight: FontWeight.w800,
                       color: _textColor.withValues(alpha: _effect == 'Fade' ? 0.25 + 0.75 * t : 1),
                       shadows: [
@@ -790,6 +792,22 @@ class _AizoraHomePageState extends State<AizoraHomePage>
                         onChanged: (v) { if (v != null) setState(() => _backgroundFit = v); },
                       ),
                       const SizedBox(height: 8),
+                      const Text('Font family', style: TextStyle(fontWeight: FontWeight.w600)),
+                      const SizedBox(height: 6),
+                      DropdownButtonFormField<String>(
+                        initialValue: _fontFamily,
+                        isExpanded: true,
+                        decoration: const InputDecoration(border: OutlineInputBorder(), prefixIcon: Icon(Icons.font_download_outlined)),
+                        items: const [
+                          DropdownMenuItem(value: 'Roboto', child: Text('Roboto')),
+                          DropdownMenuItem(value: 'System', child: Text('System default')),
+                          DropdownMenuItem(value: 'sans-serif', child: Text('Sans Serif')),
+                          DropdownMenuItem(value: 'serif', child: Text('Serif')),
+                          DropdownMenuItem(value: 'monospace', child: Text('Monospace')),
+                        ],
+                        onChanged: (v) { if (v != null) setState(() => _fontFamily = v); },
+                      ),
+                      const SizedBox(height: 10),
                       Row(children: [const Icon(Icons.format_size, color: Color(0xFF67E8F9)), const SizedBox(width: 8), const Text('Text size'), const Spacer(), Text('${_textFontSize.round()} px')]),
                       Slider(value: _textFontSize, min: 20, max: 52, divisions: 16, label: _textFontSize.round().toString(), onChanged: (v) => setState(() => _textFontSize = v)),
                       SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('Auto change effects'), subtitle: const Text('প্রতি ৩ সেকেন্ডে ইফেক্ট বদলাবে'), value: _autoEffects, onChanged: (v) => setState(() => _autoEffects = v)),
