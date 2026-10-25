@@ -55,6 +55,7 @@ class _AizoraHomePageState extends State<AizoraHomePage>
   bool _landscapePreview = true;
   double _textFontSize = 34;
   String _liveTitle = 'AIZORA TEXT LIVE';
+  String _customText = '';
   BoxFit _backgroundFit = BoxFit.cover;
   static const _effects = ['Fade', 'Slide Up', 'Slide Left', 'Zoom', 'Pulse', 'Rotate', 'Flip', 'Bounce', 'Shake', 'Wave', 'Typewriter', 'Glow'];
 
@@ -251,7 +252,7 @@ class _AizoraHomePageState extends State<AizoraHomePage>
   }
 
   Widget _buildText() {
-    final text = _texts[_textIndex % _texts.length];
+    final text = _customText.trim().isNotEmpty ? _customText.trim() : _texts[_textIndex % _texts.length];
     final colors = _backgrounds[_backgroundIndex % _backgrounds.length];
 
     return RepaintBoundary(
@@ -411,6 +412,18 @@ class _AizoraHomePageState extends State<AizoraHomePage>
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      const Text('লাইভে দেখানোর লেখা', style: TextStyle(fontWeight: FontWeight.w600)),
+                      const SizedBox(height: 6),
+                      TextFormField(
+                        key: ValueKey('customText-$_customText'),
+                        initialValue: _customText,
+                        minLines: 2,
+                        maxLines: 4,
+                        maxLength: 500,
+                        decoration: const InputDecoration(hintText: 'এখানে নিজের বাংলা বা English লেখা লিখুন', prefixIcon: Icon(Icons.edit_note), border: OutlineInputBorder(), helperText: 'খালি রাখলে স্বয়ংক্রিয় লেখা চলবে'),
+                        onChanged: (v) => setState(() => _customText = v),
+                      ),
+                      const SizedBox(height: 10),
                       const Text('লাইভ স্ক্রিনের উপরের নাম', style: TextStyle(fontWeight: FontWeight.w600)),
                       const SizedBox(height: 6),
                       TextFormField(
