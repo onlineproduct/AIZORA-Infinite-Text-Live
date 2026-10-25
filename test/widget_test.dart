@@ -16,7 +16,7 @@ void main() {
   testWidgets('Animation can be paused and resumed from settings', (tester) async {
     await tester.pumpWidget(const AizoraApp());
     await tester.tap(find.byTooltip('Settings'));
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 300));
 
     final toggle = find.text('Auto change text/background');
     await tester.ensureVisible(toggle);
