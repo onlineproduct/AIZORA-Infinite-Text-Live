@@ -63,6 +63,9 @@ class _AizoraHomePageState extends State<AizoraHomePage>
   double _textBorderRadius = 18;
   Color _textColor = Colors.white;
   Offset _textOffset = Offset.zero;
+  bool _canvasPanEnabled = true;
+  String _selectedCanvasLayer = 'Text';
+  Offset _backgroundOffset = Offset.zero;
   static const _effects = ['Fade', 'Slide Up', 'Slide Left', 'Zoom', 'Pulse', 'Rotate', 'Flip', 'Bounce', 'Shake', 'Wave', 'Typewriter', 'Glow'];
 
   final List<String> _texts = [
@@ -273,7 +276,27 @@ class _AizoraHomePageState extends State<AizoraHomePage>
           ),
         ),
         child: Stack(fit: StackFit.expand, children: [
-          if (_backgroundImage != null) Image.memory(_backgroundImage!, fit: _backgroundFit),
+          if (_backgroundImage != null)
+            Positioned.fill(
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => setState(() => _selectedCanvasLayer = 'Background'),
+                onPanUpdate: _canvasPanEnabled && _selectedCanvasLayer == 'Background'
+                    ? (details) => setState(() {
+                        final box = _broadcastSceneKey.currentContext?.findRenderObject() as RenderBox?;
+                        if (box == null || box.size.width == 0 || box.size.height == 0) return;
+                        _backgroundOffset = Offset(
+                          (_backgroundOffset.dx + details.delta.dx / box.size.width).clamp(-0.4, 0.4).toDouble(),
+                          (_backgroundOffset.dy + details.delta.dy / box.size.height).clamp(-0.4, 0.4).toDouble(),
+                        );
+                      })
+                    : null,
+                child: Transform.translate(
+                  offset: Offset(_backgroundOffset.dx * 280, _backgroundOffset.dy * 180),
+                  child: Image.memory(_backgroundImage!, fit: _backgroundFit),
+                ),
+              ),
+            ),
           if (_liveTitle.trim().isNotEmpty)
             Positioned(
               top: 12, left: 12, right: 12,
@@ -286,7 +309,9 @@ class _AizoraHomePageState extends State<AizoraHomePage>
             ),
           Center(
           child: GestureDetector(
-            onPanUpdate: (details) => setState(() {
+            onTap: () => setState(() => _selectedCanvasLayer = 'Text'),
+            onPanStart: (_) => setState(() => _selectedCanvasLayer = 'Text'),
+            onPanUpdate: _canvasPanEnabled ? (details) => setState(() {
               final box = _broadcastSceneKey.currentContext?.findRenderObject() as RenderBox?;
               if (box != null) {
                 final size = box.size;
@@ -294,7 +319,7 @@ class _AizoraHomePageState extends State<AizoraHomePage>
                 final dy = (_textOffset.dy + details.delta.dy / size.height).clamp(-0.42, 0.42).toDouble();
                 _textOffset = Offset(dx, dy);
               }
-            }),
+            }) : null,
             child: Transform.translate(
               offset: Offset(_textOffset.dx * 280, _textOffset.dy * 180),
               child: Padding(
@@ -465,6 +490,21 @@ class _AizoraHomePageState extends State<AizoraHomePage>
                       Row(children: [const Text('কোণ গোল করার মাত্রা'), const Spacer(), Text('${_textBorderRadius.round()}')]),
                       Slider(value: _textBorderRadius, min: 0, max: 40, divisions: 8, onChanged: (v) => setState(() => _textBorderRadius = v)),
                       const SizedBox(height: 8),
+                      const Text('Canvas Touch & Pan', style: TextStyle(fontWeight: FontWeight.w600)),
+                      SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('Pan ON/OFF'), value: _canvasPanEnabled, onChanged: (v) => setState(() => _canvasPanEnabled = v)),
+                      DropdownButtonFormField<String>(
+                        value: _selectedCanvasLayer,
+                        decoration: const InputDecoration(labelText: 'Selected layer', border: OutlineInputBorder()),
+                        items: const [
+                          DropdownMenuItem(value: 'Text', child: Text('Text')),
+                          DropdownMenuItem(value: 'Background', child: Text('Background')),
+                        ],
+                        onChanged: (v) { if (v != null) setState(() => _selectedCanvasLayer = v); },
+                      ),
+                      TextButton.icon(onPressed: () => setState(() {
+                        if (_selectedCanvasLayer == 'Text') { _textOffset = Offset.zero; }
+                        else { _backgroundOffset = Offset.zero; }
+                      }), icon: const Icon(Icons.restart_alt), label: const Text('Reset selected layer')),
                       const Text('লেখার অবস্থান', style: TextStyle(fontWeight: FontWeight.w600)),
                       const Text('প্রিভিউতে লেখার উপর আঙুল চেপে ধরে টেনে পছন্দমতো জায়গায় বসান।'),
                       Align(alignment: Alignment.centerRight, child: TextButton.icon(onPressed: () => setState(() => _textOffset = Offset.zero), icon: const Icon(Icons.center_focus_strong), label: const Text('মাঝখানে ফেরত আনুন'))),
