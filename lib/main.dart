@@ -572,24 +572,36 @@ class _AizoraHomePageState extends State<AizoraHomePage>
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(color: const Color(0xFF67E8F9).withValues(alpha: 0.65)),
                   ),
-                  child: Row(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      const Icon(Icons.crop_landscape_rounded, color: Color(0xFF67E8F9)),
-                      const SizedBox(width: 8),
-                      const Expanded(
-                        child: Text('CANVAS', style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: 1)),
-                      ),
-                      SegmentedButton<bool>(
-                        showSelectedIcon: false,
-                        segments: const [
-                          ButtonSegment(value: true, label: Text('Horizontal')),
-                          ButtonSegment(value: false, label: Text('Vertical')),
+                      const Row(
+                        children: [
+                          Icon(Icons.crop_landscape_rounded, color: Color(0xFF67E8F9), size: 20),
+                          SizedBox(width: 8),
+                          Text('CANVAS', maxLines: 1, overflow: TextOverflow.ellipsis,
+                            style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: 1)),
                         ],
-                        selected: {_landscapePreview},
-                        onSelectionChanged: (s) {
-                          setState(() => _landscapePreview = s.first);
-                          refreshSheet(() {});
-                        },
+                      ),
+                      const SizedBox(height: 8),
+                      LayoutBuilder(
+                        builder: (context, constraints) => SizedBox(
+                          width: constraints.maxWidth,
+                          child: SegmentedButton<bool>(
+                            expandedInsets: EdgeInsets.zero,
+                            showSelectedIcon: false,
+                            segments: const [
+                              ButtonSegment(value: true, label: Text('Horizontal', maxLines: 1)),
+                              ButtonSegment(value: false, label: Text('Vertical', maxLines: 1)),
+                            ],
+                            selected: {_landscapePreview},
+                            onSelectionChanged: (s) {
+                              setState(() => _landscapePreview = s.first);
+                              refreshSheet(() {});
+                            },
+                          ),
+                        ),
                       ),
                     ],
                   ),
