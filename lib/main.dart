@@ -62,6 +62,7 @@ class _AizoraHomePageState extends State<AizoraHomePage>
   double _textBorderWidth = 2;
   double _textBorderRadius = 18;
   Color _textColor = Colors.white;
+  Offset _textOffset = Offset.zero;
   static const _effects = ['Fade', 'Slide Up', 'Slide Left', 'Zoom', 'Pulse', 'Rotate', 'Flip', 'Bounce', 'Shake', 'Wave', 'Typewriter', 'Glow'];
 
   final List<String> _texts = [
@@ -284,7 +285,19 @@ class _AizoraHomePageState extends State<AizoraHomePage>
               )),
             ),
           Center(
-          child: Padding(
+          child: GestureDetector(
+            onPanUpdate: (details) => setState(() {
+              final box = _broadcastSceneKey.currentContext?.findRenderObject() as RenderBox?;
+              if (box != null) {
+                final size = box.size;
+                final dx = (_textOffset.dx + details.delta.dx / size.width).clamp(-0.42, 0.42).toDouble();
+                final dy = (_textOffset.dy + details.delta.dy / size.height).clamp(-0.42, 0.42).toDouble();
+                _textOffset = Offset(dx, dy);
+              }
+            }),
+            child: Transform.translate(
+              offset: Offset(_textOffset.dx * 280, _textOffset.dy * 180),
+              child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 32),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
@@ -333,6 +346,8 @@ class _AizoraHomePageState extends State<AizoraHomePage>
                 },
               ),
             ),
+            ),
+          ),
           ),
         ),
         ]),
@@ -449,6 +464,10 @@ class _AizoraHomePageState extends State<AizoraHomePage>
                       Slider(value: _textBorderWidth, min: 1, max: 6, divisions: 10, onChanged: (v) => setState(() => _textBorderWidth = v)),
                       Row(children: [const Text('কোণ গোল করার মাত্রা'), const Spacer(), Text('${_textBorderRadius.round()}')]),
                       Slider(value: _textBorderRadius, min: 0, max: 40, divisions: 8, onChanged: (v) => setState(() => _textBorderRadius = v)),
+                      const SizedBox(height: 8),
+                      const Text('লেখার অবস্থান', style: TextStyle(fontWeight: FontWeight.w600)),
+                      const Text('প্রিভিউতে লেখার উপর আঙুল চেপে ধরে টেনে পছন্দমতো জায়গায় বসান।'),
+                      Align(alignment: Alignment.centerRight, child: TextButton.icon(onPressed: () => setState(() => _textOffset = Offset.zero), icon: const Icon(Icons.center_focus_strong), label: const Text('মাঝখানে ফেরত আনুন'))),
                       const SizedBox(height: 8),
                       const Text('লেখার রং', style: TextStyle(fontWeight: FontWeight.w600)),
                       Wrap(spacing: 8, children: [for (final color in [Colors.white, const Color(0xFF67E8F9), const Color(0xFFFBBF24), const Color(0xFFF472B6), const Color(0xFF4ADE80), Colors.red]) InkWell(onTap: () => setState(() => _textColor = color), child: Container(width: 32, height: 32, decoration: BoxDecoration(color: color, shape: BoxShape.circle, border: Border.all(color: _textColor == color ? Colors.white : Colors.white24, width: _textColor == color ? 3 : 1))))]),
