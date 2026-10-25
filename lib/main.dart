@@ -485,7 +485,7 @@ class _AizoraHomePageState extends State<AizoraHomePage>
                         for (final color in [const Color(0xFF67E8F9), Colors.white, const Color(0xFFFBBF24), const Color(0xFFF472B6), const Color(0xFF4ADE80), Colors.red])
                           InkWell(onTap: () => setState(() => _textBorderColor = color), child: Container(width: 32, height: 32, decoration: BoxDecoration(color: color, shape: BoxShape.circle, border: Border.all(color: _textBorderColor == color ? Colors.white : Colors.white24, width: _textBorderColor == color ? 3 : 1)))),
                       ]),
-                      Row(children: [const Text('বর্ডারের পুরুত্ব'), const Spacer(), Text('${_textBorderWidth.toStringAsFixed(1)}')]),
+                      Row(children: [const Text('বর্ডারের পুরুত্ব'), const Spacer(), Text(_textBorderWidth.toStringAsFixed(1))]),
                       Slider(value: _textBorderWidth, min: 1, max: 6, divisions: 10, onChanged: (v) => setState(() => _textBorderWidth = v)),
                       Row(children: [const Text('কোণ গোল করার মাত্রা'), const Spacer(), Text('${_textBorderRadius.round()}')]),
                       Slider(value: _textBorderRadius, min: 0, max: 40, divisions: 8, onChanged: (v) => setState(() => _textBorderRadius = v)),
@@ -493,7 +493,7 @@ class _AizoraHomePageState extends State<AizoraHomePage>
                       const Text('Canvas Touch & Pan', style: TextStyle(fontWeight: FontWeight.w600)),
                       SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('Pan ON/OFF'), value: _canvasPanEnabled, onChanged: (v) => setState(() => _canvasPanEnabled = v)),
                       DropdownButtonFormField<String>(
-                        value: _selectedCanvasLayer,
+                        initialValue: _selectedCanvasLayer,
                         decoration: const InputDecoration(labelText: 'Selected layer', border: OutlineInputBorder()),
                         items: const [
                           DropdownMenuItem(value: 'Text', child: Text('Text')),
@@ -514,7 +514,7 @@ class _AizoraHomePageState extends State<AizoraHomePage>
                       const SizedBox(height: 8),
                       const Text('ব্যাকগ্রাউন্ড ছবি ক্রপ', style: TextStyle(fontWeight: FontWeight.w600)),
                       DropdownButtonFormField<BoxFit>(
-                        value: _backgroundFit,
+                        initialValue: _backgroundFit,
                         decoration: const InputDecoration(border: OutlineInputBorder(), prefixIcon: Icon(Icons.crop)),
                         items: const [
                           DropdownMenuItem(value: BoxFit.cover, child: Text('Cover — স্ক্রিন ভরে ক্রপ')),
