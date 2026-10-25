@@ -542,6 +542,7 @@ class _AizoraHomePageState extends State<AizoraHomePage>
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
+      enableDrag: false,
       backgroundColor: const Color(0xFF10172A),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
