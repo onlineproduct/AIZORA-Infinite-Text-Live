@@ -52,6 +52,7 @@ class _AizoraHomePageState extends State<AizoraHomePage>
   Uint8List? _backgroundImage;
   String _effect = 'Fade';
   bool _autoEffects = true;
+  bool _landscapePreview = true;
   static const _effects = ['Fade', 'Slide Up', 'Slide Left', 'Zoom', 'Pulse', 'Rotate', 'Flip', 'Bounce', 'Shake', 'Wave', 'Typewriter', 'Glow'];
 
   final List<String> _texts = [
@@ -337,7 +338,24 @@ class _AizoraHomePageState extends State<AizoraHomePage>
               const Align(alignment: Alignment.centerLeft, child: Text('✦  LIVE SCENE PREVIEW', style: TextStyle(color: Color(0xFF67E8F9), fontWeight: FontWeight.bold, letterSpacing: 1.2))),
               const SizedBox(height: 10),
               Expanded(
-                child: ClipRRect(borderRadius: BorderRadius.circular(22), child: _buildText()),
+                child: Center(
+                  child: AspectRatio(
+                    aspectRatio: _landscapePreview ? 16 / 9 : 9 / 16,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(22),
+                      child: _buildText(),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              SegmentedButton<bool>(
+                segments: const [
+                  ButtonSegment(value: true, label: Text('Horizontal'), icon: Icon(Icons.stay_current_landscape)),
+                  ButtonSegment(value: false, label: Text('Vertical'), icon: Icon(Icons.stay_current_portrait)),
+                ],
+                selected: {_landscapePreview},
+                onSelectionChanged: (selection) => setState(() => _landscapePreview = selection.first),
               ),
               const SizedBox(height: 12),
               Wrap(
