@@ -3,11 +3,11 @@ package com.aizora.infinite_text_live
 import androidx.annotation.NonNull
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
-import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
     private val channelName = "aizora.live"
+    private var publisher: AizoraLivePublisher? = null
 
     override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -25,18 +25,33 @@ class MainActivity : FlutterActivity() {
                         return@setMethodCallHandler
                     }
 
-                    android.util.Log.w("AIZORA_LIVE", "RTMPS publisher is not implemented yet; refusing to report a false live start.")
-                    result.error("PUBLISHER_NOT_IMPLEMENTED", "RTMPS publishing is not implemented yet. No Facebook Live stream was started.", null)
+                    if (publisher?.state == "connecting" || publisher?.state == "publishing_video") {
+                        result.error("ALREADY_RUNNING", "Publisher is already active", null)
+                        return@setMethodCallHandler
+                    }
+                    try {
+                        publisher?.close()
+                        val next = AizoraLivePublisher(serverUrl, streamKey, width.coerceIn(240, 1280), height.coerceIn(240, 1280))
+                        publisher = next
+                        next.start()
+                        result.success(true) // Request accepted, NOT a confirmed Facebook Live.
+                    } catch (error: Exception) {
+                        result.error("START_FAILED", error.message ?: "Could not start publisher", null)
+                    }
                 }
                 "stopLive" -> {
-                    result.success(false)
-                    android.util.Log.i("AIZORA_LIVE", "No active publisher exists; stop acknowledged without claiming a stream stopped.")
+                    val existing = publisher
+                    existing?.close()
+                    result.success(existing != null)
                 }
                 "status" -> {
+                    val current = publisher
                     result.success(mapOf(
-                        "status" to "publisher_not_implemented",
-                        "streaming" to false,
+                        "status" to (current?.state ?: "idle"),
+                        "streaming" to (current?.state == "publishing_video"),
+                        "error" to current?.lastError,
                         "platform" to "android",
+                        "previewMatchesStream" to false
                     ))
                 }
                 else -> result.notImplemented()
