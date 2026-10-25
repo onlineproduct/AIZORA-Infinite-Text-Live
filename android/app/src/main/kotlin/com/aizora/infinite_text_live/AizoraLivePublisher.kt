@@ -32,7 +32,7 @@ internal class AizoraLivePublisher(
             try {
                 val liveSession = AizoraRtmpSession()
                 session = liveSession
-                liveSession.open(serverUrl, "rtmp", streamKey)
+                liveSession.open(serverUrl, "", streamKey)
                 if (!running.get()) return@Thread
                 val video = AizoraH264Encoder(width, height, 15)
                 encoder = video
