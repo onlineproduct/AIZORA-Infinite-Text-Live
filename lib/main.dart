@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:typed_data';
+import 'package:audioplayers/audioplayers.dart';
 import 'package:file_picker/file_picker.dart';
 
 import 'package:flutter/material.dart';
@@ -45,6 +47,11 @@ class _AizoraHomePageState extends State<AizoraHomePage>
   static const MethodChannel _channel = MethodChannel(_liveChannelName);
 
   final GlobalKey _broadcastSceneKey = GlobalKey();
+  final AudioPlayer _musicPlayer = AudioPlayer();
+  Uint8List? _musicBytes;
+  String? _musicFileName;
+  bool _musicPlaying = false;
+  bool _musicLoop = true;
   String? _rtmpsServer;
   String? _streamKey;
   String _statusMessage = 'Animation ready';
@@ -112,6 +119,7 @@ class _AizoraHomePageState extends State<AizoraHomePage>
   void dispose() {
     _textController.dispose();
     _ticker?.cancel();
+    _musicPlayer.dispose();
     super.dispose();
   }
 
@@ -252,6 +260,47 @@ class _AizoraHomePageState extends State<AizoraHomePage>
     }
   }
 
+  Future<void> _pickMusic() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(type: FileType.audio, withData: true);
+      if (!mounted || result == null) return;
+      final bytes = result.files.single.bytes;
+      if (bytes == null || bytes.isEmpty) {
+        setState(() => _statusMessage = 'Audio file could not be read.');
+        return;
+      }
+      await _musicPlayer.stop();
+      setState(() {
+        _musicBytes = bytes;
+        _musicFileName = result.files.single.name;
+        _musicPlaying = false;
+        _statusMessage = 'Music selected: $_musicFileName';
+      });
+    } catch (error) {
+      if (mounted) setState(() => _statusMessage = 'Music selection failed: $error');
+    }
+  }
+
+  Future<void> _toggleMusic() async {
+    final bytes = _musicBytes;
+    if (bytes == null || bytes.isEmpty) {
+      await _pickMusic();
+      return;
+    }
+    try {
+      if (_musicPlaying) {
+        await _musicPlayer.pause();
+        if (mounted) setState(() => _musicPlaying = false);
+      } else {
+        await _musicPlayer.setReleaseMode(_musicLoop ? ReleaseMode.loop : ReleaseMode.stop);
+        await _musicPlayer.play(BytesSource(bytes));
+        if (mounted) setState(() { _musicPlaying = true; _statusMessage = 'Music playback started on this device.'; });
+      }
+    } catch (error) {
+      if (mounted) setState(() { _musicPlaying = false; _statusMessage = 'Music playback failed: $error'; });
+    }
+  }
+
   Future<void> _pickBackground() async {
     try {
       final result = await FilePicker.platform.pickFiles(type: FileType.image, withData: true);
@@ -262,6 +311,26 @@ class _AizoraHomePageState extends State<AizoraHomePage>
     } catch (error) {
       if (mounted) setState(() => _statusMessage = 'Photo selection failed: $error');
     }
+  }
+
+  Widget _studioCard({required IconData icon, required String title, required String subtitle, required Widget child}) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF151D38), Color(0xFF10172A)]),
+          border: Border.all(color: const Color(0xFF6366F1).withValues(alpha: 0.35)),
+        ),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [Container(width: 42, height: 42, decoration: BoxDecoration(gradient: const LinearGradient(colors: [Color(0xFF2563EB), Color(0xFF7C3AED)]), borderRadius: BorderRadius.circular(13)), child: Icon(icon, color: Colors.white)), const SizedBox(width: 12), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: const TextStyle(fontWeight: FontWeight.w800, letterSpacing: 1)), const SizedBox(height: 3), Text(subtitle, style: const TextStyle(color: Colors.white60, fontSize: 12))]))]),
+          const SizedBox(height: 16),
+          child,
+        ]),
+      ),
+    );
   }
 
   Widget _buildText() {
@@ -421,14 +490,14 @@ class _AizoraHomePageState extends State<AizoraHomePage>
                 spacing: 7,
                 runSpacing: 7,
                 children: [
-                  for (final tab in const ['Home', 'Editor', 'Background', 'Animation', 'Live'])
+                  for (final tab in const ['Home', 'Editor', 'Background', 'Animation', 'Music', 'Live Setup', 'Live Control', 'Settings'])
                     ChoiceChip(
                       label: Text(tab),
                       selected: _studioTab == tab,
                       onSelected: (_) => setState(() {
                         _studioTab = tab;
-                        if (tab == 'Editor' || tab == 'Animation') _showSettings = true;
-                        if (tab == 'Home' || tab == 'Background' || tab == 'Live') _showSettings = false;
+                        if (tab == 'Editor' || tab == 'Animation' || tab == 'Settings') _showSettings = true;
+                        if (tab == 'Home' || tab == 'Background' || tab == 'Music' || tab == 'Live Setup' || tab == 'Live Control') _showSettings = false;
                       }),
                     ),
                 ],
@@ -441,15 +510,24 @@ class _AizoraHomePageState extends State<AizoraHomePage>
                   FilledButton.icon(onPressed: _pickBackground, icon: const Icon(Icons.add_photo_alternate), label: const Text('Choose background photo')),
                   if (_backgroundImage != null) TextButton.icon(onPressed: () => setState(() => _backgroundImage = null), icon: const Icon(Icons.delete_outline), label: const Text('Remove photo')),
                 ]))),
-              if (_studioTab == 'Live')
-                Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(children: [
-                  const Text('FACEBOOK LIVE CONTROL', style: TextStyle(fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 8),
-                  OutlinedButton.icon(onPressed: _configureStreamSettings, icon: const Icon(Icons.link), label: const Text('Configure RTMPS')),
-                  FilledButton.icon(onPressed: _isBusy ? null : _isStreaming ? _stopLive : _startLive,
-                    icon: Icon(_isStreaming ? Icons.stop_circle : Icons.live_tv),
-                    label: Text(_isStreaming ? 'Stop Live' : 'Start Live')),
-                ]))),
+              if (_studioTab == 'Music')
+                _studioCard(
+                  icon: Icons.music_note_rounded,
+                  title: 'MUSIC STUDIO',
+                  subtitle: 'ফোন থেকে অডিও নির্বাচন করুন, চালান ও লুপ করুন',
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                    OutlinedButton.icon(onPressed: _pickMusic, icon: const Icon(Icons.library_music), label: const Text('Choose audio file')),
+                    if (_musicFileName != null) Padding(padding: const EdgeInsets.symmetric(vertical: 8), child: Text(_musicFileName!, maxLines: 2, overflow: TextOverflow.ellipsis)),
+                    SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('Loop music'), value: _musicLoop, onChanged: (v) async { setState(() => _musicLoop = v); if (_musicPlaying) await _musicPlayer.setReleaseMode(v ? ReleaseMode.loop : ReleaseMode.stop); }),
+                    Row(children: [Expanded(child: FilledButton.icon(onPressed: _toggleMusic, icon: Icon(_musicPlaying ? Icons.pause : Icons.play_arrow), label: Text(_musicPlaying ? 'Pause music' : 'Play music'))), const SizedBox(width: 8), IconButton(tooltip: 'Stop music', onPressed: () async { await _musicPlayer.stop(); if (mounted) setState(() => _musicPlaying = false); }, icon: const Icon(Icons.stop_circle_outlined))]),
+                  ]),
+                ),
+              if (_studioTab == 'Live Setup')
+                _studioCard(icon: Icons.settings_input_antenna, title: 'FACEBOOK LIVE SETUP', subtitle: 'RTMPS credentials are held in memory for this session.', child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [OutlinedButton.icon(onPressed: _configureStreamSettings, icon: const Icon(Icons.link), label: const Text('Configure RTMPS Server & Key')), Text(_rtmpsServer == null ? 'RTMPS: Not configured' : 'RTMPS server configured', style: const TextStyle(color: Colors.white70)), const SizedBox(height: 8), const Text('Security: Stream Key is not shown or saved to disk.', style: TextStyle(color: Colors.white54))])),
+              if (_studioTab == 'Live Control')
+                _studioCard(icon: Icons.live_tv, title: 'LIVE CONTROL', subtitle: 'Live publishing status is reported by the native publisher.', child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: const Color(0xFF0B1222), borderRadius: BorderRadius.circular(14)), child: Text(_statusMessage)), const SizedBox(height: 10), FilledButton.icon(onPressed: _isBusy ? null : _isStreaming ? _stopLive : _startLive, icon: Icon(_isStreaming ? Icons.stop_circle : Icons.live_tv), label: Text(_isBusy ? 'Please wait…' : _isStreaming ? 'Stop Live' : 'Start Live'))])),
+              if (_studioTab == 'Live Setup' || _studioTab == 'Live Control')
+                const SizedBox(height: 8),
               if (_studioTab == 'Animation')
                 Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(children: [
                   const Text('ANIMATION EFFECTS', style: TextStyle(fontWeight: FontWeight.bold)),
