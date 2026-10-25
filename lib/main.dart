@@ -57,7 +57,6 @@ class _AizoraHomePageState extends State<AizoraHomePage>
   bool _isRunning = true;
   bool _isStreaming = false;
   bool _isBusy = false;
-  bool _showSettings = false;
   String _studioTab = 'Home';
   Uint8List? _backgroundImage;
   String _effect = 'Fade';
@@ -454,6 +453,7 @@ class _AizoraHomePageState extends State<AizoraHomePage>
     );
   }
 
+  // ignore: unused_element
   Widget _dashboardMetric(IconData icon, String label, String value) {
     return Container(
       padding: const EdgeInsets.all(12),
@@ -474,6 +474,7 @@ class _AizoraHomePageState extends State<AizoraHomePage>
     );
   }
 
+  // ignore: unused_element
   Widget _quickAction(String label, IconData icon, String tab) {
     return OutlinedButton.icon(
       onPressed: () => setState(() {
@@ -485,6 +486,7 @@ class _AizoraHomePageState extends State<AizoraHomePage>
     );
   }
 
+  // ignore: unused_element
   Widget _buildNavigationPanel() {
     const items = <(String, String, IconData)>[
       ('Home', 'Home', Icons.dashboard_rounded),
