@@ -437,7 +437,9 @@ class _AizoraHomePageState extends State<AizoraHomePage>
                   ),
                 ],
               ),
-              if (_showSettings) Row(children: [
+              if (_showSettings)
+                Expanded(child: SingleChildScrollView(child: Column(children: [
+              Row(children: [
                 const Icon(Icons.animation, color: Color(0xFF67E8F9)),
                 const SizedBox(width: 8),
                 Expanded(child: DropdownButton<String>(
@@ -448,7 +450,7 @@ class _AizoraHomePageState extends State<AizoraHomePage>
                 FilterChip(label: const Text('Auto FX'), selected: _autoEffects,
                     onSelected: (v) => setState(() => _autoEffects = v)),
               ]),
-              if (_showSettings) ...[
+              ...[
                 const SizedBox(height: 8),
                 const Align(alignment: Alignment.centerLeft, child: Text('ANIMATION & TEXT', style: TextStyle(color: Color(0xFF67E8F9), fontWeight: FontWeight.bold, letterSpacing: 1.0))),
                 const SizedBox(height: 6),
@@ -547,6 +549,7 @@ class _AizoraHomePageState extends State<AizoraHomePage>
                   ],
                 ),
               ],
+                ]))),
               const SizedBox(height: 12),
               Text(
                 _statusMessage,
