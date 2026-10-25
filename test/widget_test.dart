@@ -15,23 +15,21 @@ void main() {
 
   testWidgets('Animation can be paused and resumed from settings', (tester) async {
     await tester.pumpWidget(const AizoraApp());
-
     await tester.tap(find.text('Settings'));
     await tester.pump();
 
-    expect(find.text('Pause animation'), findsOneWidget);
-    await tester.tap(find.text('Pause animation'));
+    final toggle = find.text('Auto change text/background');
+    await tester.ensureVisible(toggle);
+    await tester.tap(toggle);
     await tester.pump();
 
-    expect(find.text('Resume animation'), findsOneWidget);
     await tester.pump(const Duration(seconds: 3));
     await tester.pump();
     expect(find.text('ভালোবাসা মানে একে অপরের পাশে থাকা।'), findsOneWidget);
 
-    await tester.tap(find.text('Resume animation'));
+    await tester.ensureVisible(toggle);
+    await tester.tap(toggle);
     await tester.pump();
-    expect(find.text('Pause animation'), findsOneWidget);
-
     await tester.pump(const Duration(seconds: 3));
     await tester.pump();
     expect(find.text('তোমার হাসিতে আমার পৃথিবী সুন্দর।'), findsOneWidget);
