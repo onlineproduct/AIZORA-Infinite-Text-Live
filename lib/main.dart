@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:typed_data';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:file_picker/file_picker.dart';
 
@@ -684,7 +683,7 @@ class _AizoraHomePageState extends State<AizoraHomePage>
                       ],
                       const SizedBox(height: 14),
                       DropdownButtonFormField<BoxFit>(
-                        value: _backgroundFit,
+                        initialValue: _backgroundFit,
                         decoration: const InputDecoration(
                           labelText: 'Photo fit',
                           helperText: 'Cover crops edges • Contain shows full image • Fill stretches',
