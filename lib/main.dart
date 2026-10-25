@@ -216,8 +216,19 @@ class _AizoraHomePageState extends State<AizoraHomePage>
       if (!mounted) return;
       if (started) {
         setState(() {
-          _isStreaming = true;
-          _statusMessage = 'Live stream requested. Waiting for native publisher response.';
+          _isStreaming = false;
+          _statusMessage = 'RTMPS connection requested. Checking native publisher status…';
+        });
+        await Future<void>.delayed(const Duration(seconds: 3));
+        final status = await _channel.invokeMapMethod<String, dynamic>('status');
+        if (!mounted) return;
+        final nativeState = status?['status']?.toString() ?? 'unknown';
+        final nativeError = status?['error']?.toString();
+        setState(() {
+          _isStreaming = nativeState == 'publishing_video';
+          _statusMessage = nativeState == 'publishing_video'
+              ? 'Experimental video publishing started; Facebook playback not verified.'
+              : 'Publisher: $nativeState${nativeError == null ? '' : ' — $nativeError'}';
         });
       } else {
         setState(() {
