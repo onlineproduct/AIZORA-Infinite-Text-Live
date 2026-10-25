@@ -770,17 +770,21 @@ class _AizoraHomePageState extends State<AizoraHomePage>
               ),
               const SizedBox(height: 10),
               Expanded(
-                child: Center(
-                  child: AspectRatio(
-                    aspectRatio: _landscapePreview ? 16 / 9 : 9 / 16,
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(22),
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          border: Border.all(color: const Color(0xFF6366F1), width: 1.5),
-                          borderRadius: BorderRadius.circular(22),
+                child: Align(
+                  alignment: Alignment.topCenter,
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 24),
+                    child: AspectRatio(
+                      aspectRatio: _landscapePreview ? 16 / 9 : 9 / 16,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(22),
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            border: Border.all(color: const Color(0xFF6366F1), width: 1.5),
+                            borderRadius: BorderRadius.circular(22),
+                          ),
+                          child: _buildText(),
                         ),
-                        child: _buildText(),
                       ),
                     ),
                   ),
