@@ -631,15 +631,152 @@ class _AizoraHomePageState extends State<AizoraHomePage>
                 ),
               if (_studioTab == 'Music')
                 _studioCard(
-                  icon: Icons.music_note_rounded,
+                  icon: Icons.graphic_eq_rounded,
                   title: 'MUSIC STUDIO',
-                  subtitle: 'ফোন থেকে অডিও নির্বাচন করুন, চালান ও লুপ করুন',
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                    OutlinedButton.icon(onPressed: _pickMusic, icon: const Icon(Icons.library_music), label: const Text('Choose audio file')),
-                    if (_musicFileName != null) Padding(padding: const EdgeInsets.symmetric(vertical: 8), child: Text(_musicFileName!, maxLines: 2, overflow: TextOverflow.ellipsis)),
-                    SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('Loop music'), value: _musicLoop, onChanged: (v) async { setState(() => _musicLoop = v); if (_musicPlaying) await _musicPlayer.setReleaseMode(v ? ReleaseMode.loop : ReleaseMode.stop); }),
-                    Row(children: [Expanded(child: FilledButton.icon(onPressed: _toggleMusic, icon: Icon(_musicPlaying ? Icons.pause : Icons.play_arrow), label: Text(_musicPlaying ? 'Pause music' : 'Play music'))), const SizedBox(width: 8), IconButton(tooltip: 'Stop music', onPressed: () async { await _musicPlayer.stop(); if (mounted) setState(() => _musicPlaying = false); }, icon: const Icon(Icons.stop_circle_outlined))]),
-                  ]),
+                  subtitle: 'আপনার লাইভ ক্যানভাসের জন্য ব্যাকগ্রাউন্ড মিউজিক',
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(18),
+                          gradient: const LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [Color(0xFF172B58), Color(0xFF38246C), Color(0xFF14213D)],
+                          ),
+                          border: Border.all(color: const Color(0xFF8B7CFF).withValues(alpha: 0.35)),
+                        ),
+                        child: Column(
+                          children: [
+                            Container(
+                              width: 68,
+                              height: 68,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: const LinearGradient(colors: [Color(0xFF48C6EF), Color(0xFF8B5CF6)]),
+                                boxShadow: [BoxShadow(color: const Color(0xFF7165FF).withValues(alpha: 0.28), blurRadius: 24, spreadRadius: 2)],
+                              ),
+                              child: Icon(_musicPlaying ? Icons.graphic_eq_rounded : Icons.music_note_rounded, size: 34, color: Colors.white),
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              _musicFileName ?? 'No audio selected',
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white),
+                            ),
+                            const SizedBox(height: 5),
+                            Text(
+                              _musicFileName == null ? 'Choose a file from your phone' : (_musicPlaying ? 'NOW PLAYING ON THIS DEVICE' : 'AUDIO READY'),
+                              style: const TextStyle(fontSize: 10, letterSpacing: 1.1, color: Color(0xFFB8C5FF)),
+                            ),
+                            const SizedBox(height: 16),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: List.generate(27, (i) {
+                                final heights = [10.0, 17.0, 24.0, 14.0, 30.0, 19.0, 12.0, 26.0, 34.0, 16.0, 23.0, 12.0, 29.0, 18.0, 35.0, 14.0, 24.0, 10.0, 20.0, 31.0, 15.0, 26.0, 12.0, 22.0, 33.0, 17.0, 11.0];
+                                return Container(
+                                  width: 4,
+                                  height: heights[i],
+                                  margin: const EdgeInsets.symmetric(horizontal: 2),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(4),
+                                    gradient: LinearGradient(
+                                      begin: Alignment.bottomCenter,
+                                      end: Alignment.topCenter,
+                                      colors: _musicPlaying
+                                          ? const [Color(0xFF48C6EF), Color(0xFFC084FC)]
+                                          : [const Color(0xFF7890C9).withValues(alpha: 0.65), const Color(0xFF7890C9).withValues(alpha: 0.25)],
+                                    ),
+                                  ),
+                                );
+                              }),
+                            ),
+                            const SizedBox(height: 16),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                IconButton.filledTonal(
+                                  tooltip: 'Stop music',
+                                  onPressed: () async {
+                                    await _musicPlayer.stop();
+                                    if (mounted) setState(() => _musicPlaying = false);
+                                  },
+                                  icon: const Icon(Icons.stop_rounded),
+                                ),
+                                const SizedBox(width: 14),
+                                SizedBox(
+                                  width: 58,
+                                  height: 58,
+                                  child: FilledButton(
+                                    style: FilledButton.styleFrom(
+                                      shape: const CircleBorder(),
+                                      padding: EdgeInsets.zero,
+                                      backgroundColor: const Color(0xFF7667F8),
+                                    ),
+                                    onPressed: _toggleMusic,
+                                    child: Icon(_musicPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded, size: 34),
+                                  ),
+                                ),
+                                const SizedBox(width: 14),
+                                IconButton.filledTonal(
+                                  tooltip: 'Choose or change audio',
+                                  onPressed: _pickMusic,
+                                  icon: const Icon(Icons.library_music_rounded),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      OutlinedButton.icon(
+                        onPressed: _pickMusic,
+                        icon: const Icon(Icons.folder_open_rounded),
+                        label: Text(_musicFileName == null ? 'Choose audio from phone' : 'Change audio file'),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.04),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                        ),
+                        child: SwitchListTile(
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 14),
+                          secondary: const Icon(Icons.repeat_rounded, color: Color(0xFF8B7CFF)),
+                          title: const Text('Loop music', style: TextStyle(fontWeight: FontWeight.w600)),
+                          subtitle: const Text('Automatically repeat the selected track'),
+                          value: _musicLoop,
+                          onChanged: (v) async {
+                            setState(() => _musicLoop = v);
+                            if (_musicPlaying) await _musicPlayer.setReleaseMode(v ? ReleaseMode.loop : ReleaseMode.stop);
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          const Icon(Icons.info_outline_rounded, size: 16, color: Color(0xFF9FB0D8)),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Music playback is currently on this device. Live audio publishing must be verified separately.',
+                              style: TextStyle(color: Colors.white.withValues(alpha: 0.62), fontSize: 11, height: 1.4),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               if (_studioTab == 'Live Setup')
                 _studioCard(icon: Icons.settings_input_antenna, title: 'FACEBOOK LIVE SETUP', subtitle: 'RTMPS credentials are held in memory for this session.', child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [OutlinedButton.icon(onPressed: _configureStreamSettings, icon: const Icon(Icons.link), label: const Text('Configure RTMPS Server & Key')), Text(_rtmpsServer == null ? 'RTMPS: Not configured' : 'RTMPS server configured', style: const TextStyle(color: Colors.white70)), const SizedBox(height: 8), const Text('Security: Stream Key is not shown or saved to disk.', style: TextStyle(color: Colors.white54))])),
