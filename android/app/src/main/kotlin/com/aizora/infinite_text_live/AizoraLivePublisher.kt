@@ -5,6 +5,7 @@ import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.media.MediaCodec
 import java.io.Closeable
+import java.io.File
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
@@ -15,7 +16,8 @@ internal class AizoraLivePublisher(
     private val serverUrl: String,
     private val streamKey: String,
     private val width: Int,
-    private val height: Int
+    private val height: Int,
+    private val musicFile: File? = null
 ) : Closeable {
     private val running = AtomicBoolean(false)
     @Volatile private var session: AizoraRtmpSession? = null
@@ -25,6 +27,7 @@ internal class AizoraLivePublisher(
     @Volatile var lastError: String? = null
         private set
     private var worker: Thread? = null
+    private var audioWorker: Thread? = null
     @Volatile private var latestFrame: Bitmap? = null
 
     fun submitFrame(png: ByteArray) {
@@ -47,6 +50,15 @@ internal class AizoraLivePublisher(
                 encoder = video
                 val packetizer = AizoraAvcFlvPacketizer()
                 state = "publishing_video"
+                if (musicFile != null) {
+                    audioWorker = Thread({
+                        try {
+                            AizoraAacMusicSource(musicFile).stream(liveSession, { running.get() })
+                        } catch (error: Exception) {
+                            lastError = "Music publishing: " + (error.message ?: error.javaClass.simpleName)
+                        }
+                    }, "AizoraAacMusic").apply { isDaemon = true; start() }
+                }
                 val startNs = System.nanoTime()
                 var frame = 0
                 while (running.get()) {
@@ -74,6 +86,8 @@ internal class AizoraLivePublisher(
                 try { encoder?.close() } catch (_: Exception) {}
                 encoder = null
                 latestFrame = null
+                audioWorker?.interrupt()
+                audioWorker = null
                 try { session?.close() } catch (_: Exception) {}
                 session = null
                 if (state != "failed") state = "stopped"
@@ -85,5 +99,6 @@ internal class AizoraLivePublisher(
         running.set(false)
         try { session?.close() } catch (_: Exception) {}
         worker?.interrupt()
+        audioWorker?.interrupt()
     }
 }
