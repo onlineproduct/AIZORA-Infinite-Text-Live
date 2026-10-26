@@ -1,5 +1,6 @@
 package com.aizora.infinite_text_live
 
+import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
@@ -52,6 +53,20 @@ class AizoraH264Encoder(
             val safeText = text.take(200)
             lettering.getTextBounds(safeText, 0, safeText.length, bounds)
             canvas.drawText(safeText, width / 2f, height / 2f - bounds.exactCenterY(), lettering)
+        } finally {
+            surface.unlockCanvasAndPost(canvas)
+        }
+    }
+
+    /** Renders the most recently captured Flutter canvas bitmap. */
+    fun drawBitmapFrame(bitmap: Bitmap) {
+        check(!closed) { "Encoder already closed" }
+        val canvas = surface.lockCanvas(null)
+        try {
+            canvas.drawColor(Color.BLACK)
+            val source = Rect(0, 0, bitmap.width, bitmap.height)
+            val dest = Rect(0, 0, width, height)
+            canvas.drawBitmap(bitmap, source, dest, background)
         } finally {
             surface.unlockCanvasAndPost(canvas)
         }
