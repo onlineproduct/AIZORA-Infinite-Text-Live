@@ -67,6 +67,14 @@ internal class AizoraRtmpSession : Closeable {
         checkNotNull(transport).writeMessage(9, streamId, flvAvcPayload, timestampMs)
     }
 
+    /** Send FLV AAC payload as RTMP audio message type 8. */
+    @Synchronized
+    fun sendAudio(timestampMs: Int, flvAacPayload: ByteArray) {
+        check(!closed.get() && streamId > 0) { "Publish session is not active" }
+        require(timestampMs >= 0)
+        checkNotNull(transport).writeMessage(8, streamId, flvAacPayload, timestampMs)
+    }
+
     private fun nextCommand(): AizoraAmf0Reader.Command {
         val source = checkNotNull(reader)
         repeat(200) {
