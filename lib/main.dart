@@ -132,7 +132,9 @@ class _AizoraHomePageState extends State<AizoraHomePage>
     final serverController = TextEditingController(
       text: _rtmpsServer ?? 'rtmps://live-api-s.facebook.com:443/rtmp/',
     );
-    final keyController = TextEditingController();
+    final keyController = TextEditingController(text: _streamKey ?? '');
+    String? savedServer;
+    String? savedKey;
 
     final shouldSave = await showDialog<bool>(
       context: context,
@@ -178,6 +180,9 @@ class _AizoraHomePageState extends State<AizoraHomePage>
                 );
                 return;
               }
+              savedServer = server;
+              savedKey = key;
+              FocusScope.of(context).unfocus();
               Navigator.pop(context, true);
             },
             child: const Text('সংরক্ষণ'),
@@ -188,9 +193,9 @@ class _AizoraHomePageState extends State<AizoraHomePage>
 
     if (shouldSave == true && mounted) {
       setState(() {
-        _rtmpsServer = serverController.text.trim();
-        _streamKey = keyController.text.trim();
-        _statusMessage = 'Live configuration stored in memory for this session.';
+        _rtmpsServer = savedServer;
+        _streamKey = savedKey;
+        _statusMessage = 'RTMPS server and Stream Key saved for this app session.';
       });
     }
 
