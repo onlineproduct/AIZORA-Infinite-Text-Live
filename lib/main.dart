@@ -60,6 +60,7 @@ class _AizoraHomePageState extends State<AizoraHomePage>
   bool _isStreaming = false;
   Timer? _frameUploadTimer;
   bool _frameUploadBusy = false;
+  int _frameStatusTicks = 0;
   bool _isBusy = false;
   String _studioTab = 'Home';
   Uint8List? _backgroundImage;
@@ -210,6 +211,22 @@ class _AizoraHomePageState extends State<AizoraHomePage>
           await _channel.invokeMethod<bool>('submitFrame', {
             'png': data.buffer.asUint8List(),
           });
+          if (++_frameStatusTicks % 20 == 0) {
+            final live = await _channel.invokeMapMethod<String, dynamic>('status');
+            if (mounted) {
+              final state = live?['status']?.toString() ?? 'unknown';
+              final frames = live?['capturedCanvasFrames'] ?? 0;
+              final packets = live?['sentVideoPackets'] ?? 0;
+              final error = live?['error']?.toString();
+              setState(() {
+                _isStreaming = state == 'publishing_video';
+                _statusMessage = 'RTMPS: $state | Canvas frames: $frames | Video packets: $packets'
+                    '${error == null ? '' : ' | Error: $error'}'
+                    ' | Facebook preview not verified';
+              });
+              if (!_isStreaming) _stopCanvasUpload();
+            }
+          }
         }
       } finally {
         image.dispose();
