@@ -1,3 +1,5 @@
+import 'dart:ui' as ui;
+import 'package:flutter/rendering.dart';
 import 'dart:async';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:file_picker/file_picker.dart';
@@ -56,6 +58,8 @@ class _AizoraHomePageState extends State<AizoraHomePage>
   String _statusMessage = 'Animation ready';
   bool _isRunning = true;
   bool _isStreaming = false;
+  Timer? _frameUploadTimer;
+  bool _frameUploadBusy = false;
   bool _isBusy = false;
   String _studioTab = 'Home';
   Uint8List? _backgroundImage;
@@ -192,6 +196,44 @@ class _AizoraHomePageState extends State<AizoraHomePage>
     keyController.dispose();
   }
 
+  Future<void> _sendCanvasFrame() async {
+    if (!_isStreaming || _frameUploadBusy || !mounted) return;
+    _frameUploadBusy = true;
+    try {
+      final boundary = _broadcastSceneKey.currentContext?.findRenderObject();
+      if (boundary is! RenderRepaintBoundary || boundary.debugNeedsPaint) return;
+      final image = await boundary.toImage(pixelRatio: 0.75);
+      try {
+        final data = await image.toByteData(format: ui.ImageByteFormat.png);
+        if (data != null) {
+          await _channel.invokeMethod<bool>('submitFrame', {
+            'png': data.buffer.asUint8List(),
+          });
+        }
+      } finally {
+        image.dispose();
+      }
+    } catch (error) {
+      if (mounted) setState(() => _statusMessage = 'Canvas capture error: $error');
+    } finally {
+      _frameUploadBusy = false;
+    }
+  }
+
+  void _startCanvasUpload() {
+    _frameUploadTimer?.cancel();
+    _frameUploadTimer = Timer.periodic(
+      const Duration(milliseconds: 250),
+      (_) => _sendCanvasFrame(),
+    );
+    _sendCanvasFrame();
+  }
+
+  void _stopCanvasUpload() {
+    _frameUploadTimer?.cancel();
+    _frameUploadTimer = null;
+  }
+
   Future<void> _startLive() async {
     if (_rtmpsServer == null || _streamKey == null || _streamKey!.isEmpty) {
       await _configureStreamSettings();
@@ -230,6 +272,7 @@ class _AizoraHomePageState extends State<AizoraHomePage>
               ? 'Experimental video publishing started; Facebook playback not verified.'
               : 'Publisher: $nativeState${nativeError == null ? '' : ' — $nativeError'}';
         });
+        if (_isStreaming) _startCanvasUpload();
       } else {
         setState(() {
           _statusMessage = 'Native publisher rejected the start request.';
@@ -248,6 +291,7 @@ class _AizoraHomePageState extends State<AizoraHomePage>
   }
 
   Future<void> _stopLive() async {
+    _stopCanvasUpload();
     setState(() => _isBusy = true);
     try {
       final bool stopped = await _channel.invokeMethod<bool>('stopLive') ?? false;
