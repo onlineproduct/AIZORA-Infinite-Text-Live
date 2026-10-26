@@ -1,6 +1,7 @@
 package com.aizora.infinite_text_live
 
 import androidx.annotation.NonNull
+import java.io.File
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -31,7 +32,12 @@ class MainActivity : FlutterActivity() {
                     }
                     try {
                         publisher?.close()
-                        val next = AizoraLivePublisher(serverUrl, streamKey, width.coerceIn(240, 1280), height.coerceIn(240, 1280))
+                        val musicBytes = call.argument<ByteArray>("musicAacM4a")
+                        val musicFile = if (musicBytes != null && musicBytes.isNotEmpty()) {
+                            require(musicBytes.size <= 20_000_000) { "Music file must be 20 MB or smaller" }
+                            File(cacheDir, "aizora-live-music.m4a").apply { writeBytes(musicBytes) }
+                        } else null
+                        val next = AizoraLivePublisher(serverUrl, streamKey, width.coerceIn(240, 1280), height.coerceIn(240, 1280), musicFile)
                         publisher = next
                         next.start()
                         result.success(true) // Request accepted, NOT a confirmed Facebook Live.
