@@ -9,8 +9,8 @@ import java.io.File
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
- * Experimental video-only publisher. Draws a native placeholder scene, not the
- * Flutter canvas. A successful connection is not proof of Facebook playback.
+ * Experimental RTMPS publisher. Encodes captured Flutter canvas frames when available.
+ * A successful RTMP publish response does not confirm Facebook playback.
  */
 internal class AizoraLivePublisher(
     private val serverUrl: String,
@@ -26,6 +26,10 @@ internal class AizoraLivePublisher(
         private set
     @Volatile var lastError: String? = null
         private set
+    @Volatile var sentVideoPackets: Long = 0
+        private set
+    @Volatile var capturedCanvasFrames: Long = 0
+        private set
     private var worker: Thread? = null
     private var audioWorker: Thread? = null
     @Volatile private var latestFrame: Bitmap? = null
@@ -34,6 +38,7 @@ internal class AizoraLivePublisher(
         if (!running.get() || png.size > 3_000_000) return
         val decoded = BitmapFactory.decodeByteArray(png, 0, png.size) ?: return
         latestFrame = decoded
+        capturedCanvasFrames++
     }
 
     @Synchronized fun start() {
@@ -69,7 +74,10 @@ internal class AizoraLivePublisher(
                         if (flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM == 0) {
                             val timestamp = (ptsUs / 1000L).coerceIn(0L, Int.MAX_VALUE.toLong()).toInt()
                             for (payload in packetizer.packetize(bytes)) {
-                                if (running.get()) liveSession.sendVideo(timestamp, payload)
+                                if (running.get()) {
+                                    liveSession.sendVideo(timestamp, payload)
+                                    sentVideoPackets++
+                                }
                             }
                         }
                     }
