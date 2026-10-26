@@ -72,6 +72,8 @@ class MainActivity : FlutterActivity() {
                         "streaming" to (current?.state == "publishing_video"),
                         "error" to current?.lastError,
                         "platform" to "android",
+                        "capturedCanvasFrames" to (current?.capturedCanvasFrames ?: 0L),
+                        "sentVideoPackets" to (current?.sentVideoPackets ?: 0L),
                         "previewMatchesStream" to false
                     ))
                 }
