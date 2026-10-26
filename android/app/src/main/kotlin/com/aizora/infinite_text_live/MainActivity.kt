@@ -10,6 +10,12 @@ class MainActivity : FlutterActivity() {
     private val channelName = "aizora.live"
     private var publisher: AizoraLivePublisher? = null
 
+    override fun onDestroy() {
+        publisher?.close()
+        publisher = null
+        super.onDestroy()
+    }
+
     override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
 
@@ -27,7 +33,8 @@ class MainActivity : FlutterActivity() {
                     }
 
                     if (publisher?.state == "connecting" || publisher?.state == "publishing_video") {
-                        result.error("ALREADY_RUNNING", "Publisher is already active", null)
+                        // Idempotent start: the existing publisher is already running.
+                        result.success(true)
                         return@setMethodCallHandler
                     }
                     try {
@@ -54,6 +61,7 @@ class MainActivity : FlutterActivity() {
                 }
                 "stopLive" -> {
                     val existing = publisher
+                    publisher = null
                     existing?.close()
                     result.success(existing != null)
                 }
