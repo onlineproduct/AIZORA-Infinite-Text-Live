@@ -1,5 +1,7 @@
 package com.aizora.infinite_text_live
 
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.media.MediaCodec
 import java.io.Closeable
@@ -23,6 +25,13 @@ internal class AizoraLivePublisher(
     @Volatile var lastError: String? = null
         private set
     private var worker: Thread? = null
+    @Volatile private var latestFrame: Bitmap? = null
+
+    fun submitFrame(png: ByteArray) {
+        if (!running.get() || png.size > 3_000_000) return
+        val decoded = BitmapFactory.decodeByteArray(png, 0, png.size) ?: return
+        latestFrame = decoded
+    }
 
     @Synchronized fun start() {
         check(worker == null) { "Publisher already started" }
@@ -41,7 +50,9 @@ internal class AizoraLivePublisher(
                 val startNs = System.nanoTime()
                 var frame = 0
                 while (running.get()) {
-                    video.drawFrame("AIZORA TEXT LIVE", if (frame / 45 % 2 == 0) Color.rgb(18, 34, 78) else Color.rgb(53, 27, 90))
+                    val image = latestFrame
+                    if (image != null && !image.isRecycled) video.drawBitmapFrame(image)
+                    else video.drawFrame("Waiting for canvas", Color.rgb(18, 34, 78))
                     video.drain { bytes, ptsUs, flags ->
                         if (flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM == 0) {
                             val timestamp = (ptsUs / 1000L).coerceIn(0L, Int.MAX_VALUE.toLong()).toInt()
@@ -62,6 +73,7 @@ internal class AizoraLivePublisher(
                 running.set(false)
                 try { encoder?.close() } catch (_: Exception) {}
                 encoder = null
+                latestFrame = null
                 try { session?.close() } catch (_: Exception) {}
                 session = null
                 if (state != "failed") state = "stopped"
