@@ -120,6 +120,7 @@ class _AizoraHomePageState extends State<AizoraHomePage>
 
   @override
   void dispose() {
+    _stopCanvasUpload();
     _textController.dispose();
     _ticker?.cancel();
     _musicPlayer.dispose();
