@@ -39,6 +39,13 @@ class MainActivity : FlutterActivity() {
                         result.error("START_FAILED", error.message ?: "Could not start publisher", null)
                     }
                 }
+                "submitFrame" -> {
+                    val frame = call.argument<ByteArray>("png")
+                    if (frame != null && publisher?.state == "publishing_video") {
+                        publisher?.submitFrame(frame)
+                        result.success(true)
+                    } else result.success(false)
+                }
                 "stopLive" -> {
                     val existing = publisher
                     existing?.close()
