@@ -50,7 +50,7 @@ internal class AizoraRtmpSession : Closeable {
 
             wire.writeMessage(20, streamId, commands.publish())
             val publishResponse = nextCommand()
-            check(AizoraAmf0Reader.findString(publishResponse.arguments, "NetStream.Publish.Start")) {
+            check(publishResponse.name == "onStatus" && AizoraAmf0Reader.findString(publishResponse.arguments, "NetStream.Publish.Start")) {
                 "Server did not confirm publish start: ${publishResponse.name}"
             }
         } catch (error: Exception) {
@@ -85,8 +85,7 @@ internal class AizoraRtmpSession : Closeable {
                     else message.payload
                 val command = runCatching { AizoraAmf0Reader.command(payload) }.getOrNull()
                 if (command != null && (command.name == "_result" || command.name == "_error" ||
-                    AizoraAmf0Reader.findString(command.arguments, "NetStream.Publish.Start") ||
-                    AizoraAmf0Reader.findString(command.arguments, "NetStream.Publish.BadName"))) return command
+                    command.name == "onStatus")) return command
             }
         }
         throw java.net.SocketTimeoutException("No RTMP command response")
