@@ -244,6 +244,15 @@ class _AizoraHomePageState extends State<AizoraHomePage>
       return;
     }
 
+    final music = _musicBytes;
+    final musicName = (_musicFileName ?? '').toLowerCase();
+    if (music != null && music.isNotEmpty &&
+        (!musicName.endsWith('.m4a') && !musicName.endsWith('.mp4') ||
+            music.length > 20000000)) {
+      setState(() => _statusMessage =
+          'Live music currently requires an AAC M4A/MP4 file up to 20 MB.');
+      return;
+    }
     setState(() => _isBusy = true);
     try {
       final bool started = await _channel.invokeMethod<bool>(
@@ -253,6 +262,7 @@ class _AizoraHomePageState extends State<AizoraHomePage>
           'streamKey': _streamKey,
           'width': 1280,
           'height': 720,
+          if (music != null && music.isNotEmpty) 'musicAacM4a': music,
         },
       ) ?? false;
 
