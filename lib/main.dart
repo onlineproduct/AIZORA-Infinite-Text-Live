@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 void main() {
   runApp(const AizoraApp());
@@ -40,6 +41,12 @@ class AizoraHomePage extends StatefulWidget {
 
 class _AizoraHomePageState extends State<AizoraHomePage> {
   final AudioPlayer _audioPlayer = AudioPlayer();
+  static const MethodChannel _liveChannel = MethodChannel('aizora.live');
+  final TextEditingController _serverController = TextEditingController();
+  final TextEditingController _keyController = TextEditingController();
+  bool _liveBusy = false;
+  bool _liveActive = false;
+  String _liveStatus = 'Not connected';
 
   final List<List<Color>> _backgrounds = [
     [const Color(0xFF0B1120), const Color(0xFF1D4ED8)],
@@ -86,6 +93,8 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
     _backgroundTimer?.cancel();
     _textTimer?.cancel();
     _audioPlayer.dispose();
+    _serverController.dispose();
+    _keyController.dispose();
     super.dispose();
   }
 
@@ -334,6 +343,108 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
     }
   }
 
+  Future<void> _startLive() async {
+    if (_liveBusy) return;
+    final server = _serverController.text.trim();
+    final key = _keyController.text.trim();
+    if (!server.startsWith('rtmp://') && !server.startsWith('rtmps://')) {
+      setState(() => _liveStatus = 'Enter a valid RTMP/RTMPS server URL.');
+      return;
+    }
+    if (key.isEmpty) {
+      setState(() => _liveStatus = 'Enter your stream key.');
+      return;
+    }
+    setState(() { _liveBusy = true; _liveStatus = 'Connecting...'; });
+    try {
+      final result = await _liveChannel.invokeMethod<dynamic>('startLive', {
+        'serverUrl': server,
+        'streamKey': key,
+      });
+      if (!mounted) return;
+      setState(() {
+        _liveStatus = 'Publisher response: ${result ?? "No confirmation"}';
+        // A platform method returning is not proof of a Facebook stream.
+        _liveActive = false;
+      });
+    } on PlatformException catch (error) {
+      if (mounted) setState(() => _liveStatus = 'Live error: ${error.message ?? error.code}');
+    } on MissingPluginException {
+      if (mounted) setState(() => _liveStatus = 'Live publisher is not installed in this APK.');
+    } finally {
+      if (mounted) setState(() => _liveBusy = false);
+    }
+  }
+
+  Future<void> _stopLive() async {
+    if (_liveBusy) return;
+    setState(() => _liveBusy = true);
+    try {
+      await _liveChannel.invokeMethod<dynamic>('stopLive');
+      if (mounted) setState(() { _liveActive = false; _liveStatus = 'Stop requested.'; });
+    } catch (error) {
+      if (mounted) setState(() => _liveStatus = 'Stop failed: $error');
+    } finally {
+      if (mounted) setState(() => _liveBusy = false);
+    }
+  }
+
+  void _openLiveSetup() {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      backgroundColor: const Color(0xFF141D38),
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(20, 8, 20, MediaQuery.viewInsetsOf(context).bottom + 24),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Text('Facebook Live Setup', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _serverController,
+                  keyboardType: TextInputType.url,
+                  decoration: const InputDecoration(labelText: 'RTMPS Server URL', border: OutlineInputBorder()),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _keyController,
+                  obscureText: true,
+                  autocorrect: false,
+                  decoration: const InputDecoration(labelText: 'Stream Key', border: OutlineInputBorder()),
+                ),
+                const SizedBox(height: 12),
+                const Text('Preview controls are separate from publishing. A successful Facebook stream must be verified on Facebook.',
+                  style: TextStyle(color: Colors.white70)),
+                const SizedBox(height: 12),
+                StatefulBuilder(builder: (context, refresh) => Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    FilledButton.icon(
+                      onPressed: _liveBusy ? null : () async { await _startLive(); if (context.mounted) refresh(() {}); },
+                      icon: const Icon(Icons.wifi_tethering),
+                      label: const Text('Start Live'),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: _liveBusy ? null : () async { await _stopLive(); if (context.mounted) refresh(() {}); },
+                      icon: const Icon(Icons.stop_circle_outlined),
+                      label: const Text('Stop Live'),
+                    ),
+                    Text(_liveStatus, style: const TextStyle(color: Colors.white70)),
+                  ],
+                )),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   void _openSettings() {
     showModalBottomSheet<void>(
       context: context,
@@ -453,6 +564,11 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
                       ),
                       child: Text(_isRunning ? 'Running' : 'Stopped',
                         style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                    ),
+                    IconButton(
+                      tooltip: 'Facebook Live',
+                      onPressed: _openLiveSetup,
+                      icon: const Icon(Icons.wifi_tethering_rounded),
                     ),
                     IconButton(
                       tooltip: 'Settings',
