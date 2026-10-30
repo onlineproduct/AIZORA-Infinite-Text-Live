@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 void main() {
   runApp(const AizoraApp());
@@ -40,6 +41,11 @@ class AizoraHomePage extends StatefulWidget {
 
 class _AizoraHomePageState extends State<AizoraHomePage> {
   final AudioPlayer _audioPlayer = AudioPlayer();
+  static const MethodChannel _liveChannel = MethodChannel('aizora.live');
+  final TextEditingController _serverController = TextEditingController();
+  final TextEditingController _keyController = TextEditingController();
+  bool _liveBusy = false;
+  String _liveStatus = 'Not connected';
 
   final List<List<Color>> _backgrounds = [
     [const Color(0xFF0B1120), const Color(0xFF1D4ED8)],
@@ -86,6 +92,8 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
     _backgroundTimer?.cancel();
     _textTimer?.cancel();
     _audioPlayer.dispose();
+    _serverController.dispose();
+    _keyController.dispose();
     super.dispose();
   }
 
@@ -334,178 +342,282 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
     }
   }
 
+  Future<void> _startLive() async {
+    if (_liveBusy) return;
+    final server = _serverController.text.trim();
+    final key = _keyController.text.trim();
+    if (!server.startsWith('rtmp://') && !server.startsWith('rtmps://')) {
+      setState(() => _liveStatus = 'Enter a valid RTMP/RTMPS server URL.');
+      return;
+    }
+    if (key.isEmpty) {
+      setState(() => _liveStatus = 'Enter your stream key.');
+      return;
+    }
+    setState(() { _liveBusy = true; _liveStatus = 'Connecting...'; });
+    try {
+      final result = await _liveChannel.invokeMethod<dynamic>('startLive', {
+        'serverUrl': server,
+        'streamKey': key,
+      });
+      if (!mounted) return;
+      setState(() {
+        _liveStatus = 'Publisher response: ${result ?? "No confirmation"}';
+        // A platform method returning is not proof of a Facebook stream.
+      });
+    } on PlatformException catch (error) {
+      if (mounted) setState(() => _liveStatus = 'Live error: ${error.message ?? error.code}');
+    } on MissingPluginException {
+      if (mounted) setState(() => _liveStatus = 'Live publisher is not installed in this APK.');
+    } finally {
+      if (mounted) setState(() => _liveBusy = false);
+    }
+  }
+
+  Future<void> _stopLive() async {
+    if (_liveBusy) return;
+    setState(() => _liveBusy = true);
+    try {
+      await _liveChannel.invokeMethod<dynamic>('stopLive');
+      if (mounted) setState(() => _liveStatus = 'Stop requested.');
+    } catch (error) {
+      if (mounted) setState(() => _liveStatus = 'Stop failed: $error');
+    } finally {
+      if (mounted) setState(() => _liveBusy = false);
+    }
+  }
+
+  void _openLiveSetup() {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      backgroundColor: const Color(0xFF141D38),
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(20, 8, 20, MediaQuery.viewInsetsOf(context).bottom + 24),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Text('Facebook Live Setup', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _serverController,
+                  keyboardType: TextInputType.url,
+                  decoration: const InputDecoration(labelText: 'RTMPS Server URL', border: OutlineInputBorder()),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _keyController,
+                  obscureText: true,
+                  autocorrect: false,
+                  decoration: const InputDecoration(labelText: 'Stream Key', border: OutlineInputBorder()),
+                ),
+                const SizedBox(height: 12),
+                const Text('Preview controls are separate from publishing. A successful Facebook stream must be verified on Facebook.',
+                  style: TextStyle(color: Colors.white70)),
+                const SizedBox(height: 12),
+                StatefulBuilder(builder: (context, refresh) => Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    FilledButton.icon(
+                      onPressed: _liveBusy ? null : () async { await _startLive(); if (context.mounted) refresh(() {}); },
+                      icon: const Icon(Icons.wifi_tethering),
+                      label: const Text('Start Live'),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: _liveBusy ? null : () async { await _stopLive(); if (context.mounted) refresh(() {}); },
+                      icon: const Icon(Icons.stop_circle_outlined),
+                      label: const Text('Stop Live'),
+                    ),
+                    Text(_liveStatus, style: const TextStyle(color: Colors.white70)),
+                  ],
+                )),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _openSettings() {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      backgroundColor: const Color(0xFF141D38),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (sheetContext, refresh) {
+          return SafeArea(
+            top: false,
+            child: FractionallySizedBox(
+              heightFactor: 0.72,
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+                children: [
+                  const Text('Settings', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 16),
+                  const Text('Text category'),
+                  DropdownButton<String>(
+                    isExpanded: true,
+                    value: _selectedCategory,
+                    items: _categories.keys.map((name) => DropdownMenuItem(value: name, child: Text(name))).toList(),
+                    onChanged: (value) {
+                      if (value == null) return;
+                      setState(() { _selectedCategory = value; _textIndex = 0; });
+                      refresh(() {});
+                    },
+                  ),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.add_circle_outline),
+                    title: const Text('নিজের লেখা যোগ করুন'),
+                    onTap: () async {
+                      Navigator.pop(sheetContext);
+                      await _addCustomText();
+                    },
+                  ),
+                  const Divider(),
+                  const Text('Animation effect'),
+                  DropdownButton<String>(
+                    isExpanded: true,
+                    value: _selectedAnimation,
+                    items: _animationNames.map((name) => DropdownMenuItem(value: name, child: Text(name))).toList(),
+                    onChanged: (value) {
+                      if (value == null) return;
+                      setState(() => _selectedAnimation = value);
+                      refresh(() {});
+                    },
+                  ),
+                  const Divider(),
+                  const Text('Background music'),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.library_music_outlined),
+                    title: const Text('Select music'),
+                    subtitle: Text(_selectedMusicPath == null
+                        ? 'No music selected'
+                        : _selectedMusicPath!.split(Platform.pathSeparator).last,
+                      maxLines: 1, overflow: TextOverflow.ellipsis),
+                    onTap: () async {
+                      await _pickMusic();
+                      if (sheetContext.mounted) refresh(() {});
+                    },
+                  ),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Icon(_isMusicPlaying ? Icons.pause_circle_outline : Icons.play_circle_outline),
+                    title: Text(_isMusicPlaying ? 'Pause music' : 'Play music'),
+                    onTap: () async {
+                      await _toggleMusic();
+                      if (sheetContext.mounted) refresh(() {});
+                    },
+                  ),
+                  const Divider(),
+                  Text(_statusMessage, style: const TextStyle(color: Colors.white70)),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = _backgrounds[_backgroundIndex];
-    final activeAnimation = _selectedAnimation;
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isWide = constraints.maxWidth > 700;
-
-        return Scaffold(
-          body: AnimatedContainer(
-            duration: const Duration(milliseconds: 700),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: colors,
-              ),
-            ),
-            child: SafeArea(
-              child: Padding(
-                padding: EdgeInsets.all(isWide ? 24 : 16),
-                child: Column(
+    return Scaffold(
+      body: AnimatedContainer(
+        duration: const Duration(milliseconds: 700),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: colors,
+          ),
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 18),
+            child: Column(
+              children: [
+                Row(
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'AIZORA',
-                          style: TextStyle(
-                            fontSize: 26,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 2.2,
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.08),
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                          child: Text(
-                            _isRunning ? 'Running' : 'Stopped',
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white70,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Wrap(
-                      spacing: 10,
-                      runSpacing: 8,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        DropdownButton<String>(
-                          value: _selectedCategory,
-                          items: _categories.keys.map((name) => DropdownMenuItem(value: name, child: Text(name))).toList(),
-                          onChanged: (value) {
-                            if (value == null) return;
-                            setState(() { _selectedCategory = value; _textIndex = 0; });
-                          },
-                        ),
-                        DropdownButton<String>(
-                          value: _selectedAnimation,
-                          items: _animationNames.map((name) => DropdownMenuItem(value: name, child: Text(name))).toList(),
-                          onChanged: (value) {
-                            if (value == null) return;
-                            setState(() { _selectedAnimation = value; });
-                          },
-                        ),
-                        IconButton(
-                          tooltip: 'নিজের লেখা যোগ করুন',
-                          onPressed: _addCustomText,
-                          icon: const Icon(Icons.add_circle_outline),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Expanded(
-                      child: Center(
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(horizontal: isWide ? 80 : 20),
-                          child: _buildAnimatedText(),
-                        ),
-                      ),
+                    const Expanded(
+                      child: Text('AIZORA', style: TextStyle(
+                        fontSize: 25, fontWeight: FontWeight.w900, letterSpacing: 2)),
                     ),
                     Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                       decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.18),
-                        borderRadius: BorderRadius.circular(18),
+                        color: Colors.white.withValues(alpha: 0.10),
+                        borderRadius: BorderRadius.circular(30),
                       ),
-                      child: Column(
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: ElevatedButton.icon(
-                                  onPressed: _toggleRun,
-                                  icon: Icon(_isRunning ? Icons.stop : Icons.play_arrow),
-                                  label: Text(_isRunning ? 'Stop Animation' : 'Start Animation'),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: ElevatedButton.icon(
-                                  onPressed: _pickMusic,
-                                  icon: const Icon(Icons.audiotrack),
-                                  label: const Text('Select Music'),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: ElevatedButton.icon(
-                                  onPressed: _toggleMusic,
-                                  icon: Icon(_isMusicPlaying ? Icons.pause : Icons.play_arrow),
-                                  label: Text(_isMusicPlaying ? 'Pause Music' : 'Play Music'),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(vertical: 14),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withValues(alpha: 0.08),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Text(
-                                    'Effect: $activeAnimation',
-                                    textAlign: TextAlign.center,
-                                    style: const TextStyle(fontWeight: FontWeight.w700),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            _selectedMusicPath == null
-                                ? 'No music selected'
-                                : 'Selected: ${_selectedMusicPath!.split(Platform.pathSeparator).last}',
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(color: Colors.white70),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            _statusMessage,
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
+                      child: Text(_isRunning ? 'Running' : 'Stopped',
+                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                    ),
+                    IconButton(
+                      tooltip: 'Facebook Live',
+                      onPressed: _openLiveSetup,
+                      icon: const Icon(Icons.wifi_tethering_rounded),
+                    ),
+                    IconButton(
+                      tooltip: 'Settings',
+                      onPressed: _openSettings,
+                      icon: const Icon(Icons.tune_rounded),
                     ),
                   ],
                 ),
-              ),
+                const SizedBox(height: 12),
+                Expanded(
+                  child: Container(
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(22),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.13)),
+                      color: Colors.black.withValues(alpha: 0.12),
+                    ),
+                    child: Center(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 24),
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 330),
+                            child: _buildAnimatedText(),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                SizedBox(
+                  width: double.infinity,
+                  height: 54,
+                  child: FilledButton.icon(
+                    onPressed: _toggleRun,
+                    icon: Icon(_isRunning ? Icons.stop_rounded : Icons.play_arrow_rounded),
+                    label: Text(_isRunning ? 'Stop Animation' : 'Start Animation',
+                      maxLines: 1, overflow: TextOverflow.ellipsis),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFF5B65E8),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }

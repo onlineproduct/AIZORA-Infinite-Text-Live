@@ -40,8 +40,58 @@ jobs:
             flutter create . --platforms=android --org com.aizora --project-name aizora_infinite_text_live
           fi
 
+      - name: Install Android SDK 36
+        run: |
+          "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" --install "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Configure Android compile SDK 36
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          candidates = [Path("android/app/build.gradle.kts"), Path("android/app/build.gradle")]
+          gradle = next((p for p in candidates if p.is_file()), None)
+          if gradle is None:
+              raise SystemExit("Android Gradle configuration missing")
+          source = gradle.read_text()
+          pattern = r"(?m)^(\s*)compileSdk(?:Version)?\s*(?:=\s*)?(?:flutter\.compileSdkVersion|\d+)\s*$"
+          replacement = (r"\g<1>compileSdk = 36" if gradle.suffix == ".kts" else r"\g<1>compileSdkVersion 36")
+          updated, count = re.subn(pattern, replacement, source)
+          if count != 1:
+              raise SystemExit(f"Expected one compileSdk entry, found {count}")
+          gradle.write_text(updated)
+          print(f"Configured Android compile SDK 36: {gradle}")
+          PY
+
       - name: Install dependencies
         run: flutter pub get
+
+      - name: Configure Android plugin compile SDK 36
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import os
+          import re
+          cache = Path(os.environ.get("PUB_CACHE", str(Path.home() / ".pub-cache")))
+          roots = [cache / "hosted" / "pub.dev"]
+          changed = 0
+          for root in roots:
+              if not root.exists():
+                  continue
+              for gradle in list(root.glob("*/android/build.gradle")) + list(root.glob("*/android/build.gradle.kts")):
+                  source = gradle.read_text()
+                  pattern = r"(?m)^(\s*)compileSdk(?:Version)?\s*(?:=\s*)?(?:flutter\.compileSdkVersion|\d+)\s*$"
+                  replacement = (r"\g<1>compileSdk = 36" if gradle.suffix == ".kts" else r"\g<1>compileSdkVersion 36")
+                  updated, count = re.subn(pattern, replacement, source)
+                  if count == 1 and updated != source:
+                      gradle.write_text(updated)
+                      changed += 1
+                      print(f"Configured SDK 36: {gradle}")
+          if changed == 0:
+              print("No plugin Gradle files needed patching; continuing with APK build")
+          else:
+              print(f"Updated {changed} Android plugin Gradle files")
+          PY
 
       - name: Analyze project
         run: flutter analyze
