@@ -54,8 +54,8 @@ jobs:
           if gradle is None:
               raise SystemExit("Android Gradle configuration missing")
           source = gradle.read_text()
-          pattern = r"(?m)^(\\s*)compileSdk(?:Version)?\\s*(?:=\\s*)?(?:flutter\\.compileSdkVersion|\\d+)\\s*$"
-          replacement = (r"\\g<1>compileSdk = 36" if gradle.suffix == ".kts" else r"\\g<1>compileSdkVersion 36")
+          pattern = r"(?m)^(\s*)compileSdk(?:Version)?\s*(?:=\s*)?(?:flutter\.compileSdkVersion|\d+)\s*$"
+          replacement = (r"\g<1>compileSdk = 36" if gradle.suffix == ".kts" else r"\g<1>compileSdkVersion 36")
           updated, count = re.subn(pattern, replacement, source)
           if count != 1:
               raise SystemExit(f"Expected one compileSdk entry, found {count}")
