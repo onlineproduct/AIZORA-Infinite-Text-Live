@@ -45,7 +45,6 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
   final TextEditingController _serverController = TextEditingController();
   final TextEditingController _keyController = TextEditingController();
   bool _liveBusy = false;
-  bool _liveActive = false;
   String _liveStatus = 'Not connected';
 
   final List<List<Color>> _backgrounds = [
@@ -365,7 +364,6 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
       setState(() {
         _liveStatus = 'Publisher response: ${result ?? "No confirmation"}';
         // A platform method returning is not proof of a Facebook stream.
-        _liveActive = false;
       });
     } on PlatformException catch (error) {
       if (mounted) setState(() => _liveStatus = 'Live error: ${error.message ?? error.code}');
@@ -381,7 +379,7 @@ class _AizoraHomePageState extends State<AizoraHomePage> {
     setState(() => _liveBusy = true);
     try {
       await _liveChannel.invokeMethod<dynamic>('stopLive');
-      if (mounted) setState(() { _liveActive = false; _liveStatus = 'Stop requested.'; });
+      if (mounted) setState(() => _liveStatus = 'Stop requested.');
     } catch (error) {
       if (mounted) setState(() => _liveStatus = 'Stop failed: $error');
     } finally {
