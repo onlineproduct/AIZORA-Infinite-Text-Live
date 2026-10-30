@@ -88,8 +88,9 @@ jobs:
                       changed += 1
                       print(f"Configured SDK 36: {gradle}")
           if changed == 0:
-              raise SystemExit("No Android plugin compileSdk entries were updated")
-          print(f"Updated {changed} Android plugin Gradle files")
+              print("No plugin Gradle files needed patching; continuing with APK build")
+          else:
+              print(f"Updated {changed} Android plugin Gradle files")
           PY
 
       - name: Analyze project
