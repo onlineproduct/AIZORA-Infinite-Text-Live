@@ -266,6 +266,9 @@ class MainActivity : FlutterActivity() {
               result.error("INVALID_INPUT", "A valid RTMP(S) server and stream key are required.", null)
               return@setMethodCallHandler
             }
+            // Keep the complete RTMP publish URL while Android asks for screen-capture permission.
+            // Facebook provides the server URL and stream key as separate fields.
+            liveStartData = server.trimEnd('/') + "/" + key
             pendingStart = result
             val manager = getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
             @Suppress("DEPRECATION")
@@ -294,7 +297,6 @@ class MainActivity : FlutterActivity() {
       return
     }
     try {
-      val server = intent.getStringExtra("unused") // Do not reuse Activity intent for credentials.
       val callData = liveStartData
       if (callData == null) throw IllegalStateException("Live server details were lost.")
       val serviceIntent = Intent(this, LivePublisherService::class.java).apply {
@@ -305,6 +307,7 @@ class MainActivity : FlutterActivity() {
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) startForegroundService(serviceIntent) else startService(serviceIntent)
       liveStartData = null
     } catch (error: Exception) {
+      liveStartData = null
       pendingStart = null
       callback.error("PUBLISHER_START_FAILED", error.message ?: "Could not start foreground publisher.", null)
     }
