@@ -47,19 +47,16 @@ if "jitpack.io" not in s:
     settings.write_text(s)
 
 # Flutter's generated root build.gradle(.kts) declares project repositories.
-# Add JitPack there as well and prefer project repositories to avoid Gradle's
-# FAIL_ON_PROJECT_REPOS conflict with Flutter's standard template.
+# Add JitPack via an allprojects block; the settings script uses PREFER_PROJECT.
 root_gradle = next((p for p in [root / "build.gradle.kts", root / "build.gradle"] if p.exists()), None)
 if not root_gradle:
     raise SystemExit("Root Android Gradle file is missing")
 rg = root_gradle.read_text()
-root_jitpack = 'maven { url = uri("https://jitpack.io") }' if root_gradle.suffix == ".kts" else "maven { url 'https://jitpack.io' }"
 if "jitpack.io" not in rg:
-    match = re.search(r"(?m)^(\\s*repositories\\s*\\{)", rg)
-    if not match:
-        raise SystemExit("Could not locate root project repositories block")
-    insert_at = match.end()
-    rg = rg[:insert_at] + "\\n        " + root_jitpack + rg[insert_at:]
+    if root_gradle.suffix == ".kts":
+        rg += '\n\nallprojects {\n    repositories {\n        maven { url = uri("https://jitpack.io") }\n    }\n}\n'
+    else:
+        rg += "\n\nallprojects {\n    repositories {\n        maven { url 'https://jitpack.io' }\n    }\n}\n"
     root_gradle.write_text(rg)
 
 g = app_gradle.read_text()
