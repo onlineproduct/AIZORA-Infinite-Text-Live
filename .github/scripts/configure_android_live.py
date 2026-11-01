@@ -319,5 +319,5 @@ class MainActivity : FlutterActivity() {
   // Store the endpoint only for the duration of the user-approved start flow.
   private fun rememberEndpoint(endpoint: String) { liveStartData = endpoint }
 }
-'''))
+''')
 print("Generated RootEncoder Android publisher source and configured dependency/permissions.")
