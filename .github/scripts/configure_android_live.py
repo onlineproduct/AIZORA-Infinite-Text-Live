@@ -22,9 +22,9 @@ g = app_gradle.read_text()
 dep = 'implementation("com.github.pedroSG94.RootEncoder:library:2.6.2")' if app_gradle.suffix == ".kts" else "implementation 'com.github.pedroSG94.RootEncoder:library:2.6.2'"
 if "RootEncoder:library" not in g:
     if app_gradle.suffix == ".kts":
-        g = re.sub(r"dependencies\\s*\\{", lambda m: m.group(0) + "\n    " + dep, g, count=1)
+        g = re.sub(r"dependencies\s*\{", lambda m: m.group(0) + "\n    " + dep, g, count=1)
     else:
-        g = re.sub(r"dependencies\\s*\\{", lambda m: m.group(0) + "\n    " + dep, g, count=1)
+        g = re.sub(r"dependencies\s*\{", lambda m: m.group(0) + "\n    " + dep, g, count=1)
     if "RootEncoder:library" not in g:
         raise SystemExit("Could not insert RootEncoder dependency")
     app_gradle.write_text(g)
@@ -32,7 +32,7 @@ if "RootEncoder:library" not in g:
 m = manifest.read_text()
 if "android.permission.INTERNET" not in m:
     m = m.replace("<manifest", '<manifest')
-    m = re.sub(r"(<application)", '    <uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />\n    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />\n    \\1', m, count=1)
+    m = re.sub(r"(<application)", '    <uses-permission android:name="android.permission.INTERNET" />\n    \\1', m, count=1)
     manifest.write_text(m)
 
 pkg = "com.aizora.aizora_infinite_text_live"
