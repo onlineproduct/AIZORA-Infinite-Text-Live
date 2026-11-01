@@ -75,10 +75,10 @@ m = manifest.read_text()
 # Declare the Android 14 MediaProjection foreground-service permissions and service.
 if "android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" not in m:
     m = m.replace("<manifest", '<manifest', 1)
-    m = m.replace("<application", '    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />\\n    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />\\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />\\n    <application', 1)
+    m = m.replace("<application", '    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />\n    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />\n    <application', 1)
 service_decl = '        <service android:name=".LivePublisherService" android:exported="false" android:foregroundServiceType="mediaProjection" />'
 if "LivePublisherService" not in m:
-    m = m.replace("</application>", service_decl + "\\n    </application>")
+    m = m.replace("</application>", service_decl + "\n    </application>")
 manifest.write_text(m)
 
 if "android.permission.INTERNET" not in m:
@@ -327,3 +327,7 @@ class MainActivity : FlutterActivity() {
 }
 ''')
 print("Generated RootEncoder Android publisher source and configured dependency/permissions.")
+
+# Fail early if generated manifest contains malformed escaped newline text.
+if r"\n" in manifest.read_text():
+    raise SystemExit("Android manifest contains a literal escaped newline sequence")
