@@ -13,8 +13,8 @@ if not settings or not app_gradle or not manifest.exists():
 s = settings.read_text()
 jitpack = 'maven { url = uri("https://jitpack.io") }' if settings.suffix == ".kts" else "maven { url 'https://jitpack.io' }"
 if "jitpack.io" not in s:
-    pattern = r"(?s)(dependencyResolutionManagement\\s*\\{.*?repositories\\s*\\{.*?mavenCentral\\(\\))"
-    updated, count = re.subn(pattern, lambda m: m.group(1) + "\\n        " + jitpack, s, count=1)
+    pattern = r"(?s)(dependencyResolutionManagement\s*\{.*?repositories\s*\{.*?mavenCentral\(\))"
+    updated, count = re.subn(pattern, lambda m: m.group(1) + "\n        " + jitpack, s, count=1)
     if count != 1:
         raise SystemExit("Could not add JitPack to dependencyResolutionManagement.repositories")
     s = updated
