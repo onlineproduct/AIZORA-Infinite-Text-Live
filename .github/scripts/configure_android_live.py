@@ -8,14 +8,16 @@ manifest = root / "app/src/main/AndroidManifest.xml"
 if not settings or not app_gradle or not manifest.exists():
     raise SystemExit("Generated Android Gradle files or manifest are missing")
 
-# Add JitPack to dependency repositories (RootEncoder 2.6.2).
+# Add JitPack specifically to dependencyResolutionManagement.repositories.
+# Adding it only to pluginManagement.repositories does not resolve app libraries.
 s = settings.read_text()
 jitpack = 'maven { url = uri("https://jitpack.io") }' if settings.suffix == ".kts" else "maven { url 'https://jitpack.io' }"
 if "jitpack.io" not in s:
-    marker = "mavenCentral()"
-    if marker not in s:
-        raise SystemExit("Could not find mavenCentral() in settings repositories")
-    s = s.replace(marker, marker + "\n        " + jitpack, 1)
+    pattern = r"(?s)(dependencyResolutionManagement\\s*\\{.*?repositories\\s*\\{.*?mavenCentral\\(\\))"
+    updated, count = re.subn(pattern, lambda m: m.group(1) + "\\n        " + jitpack, s, count=1)
+    if count != 1:
+        raise SystemExit("Could not add JitPack to dependencyResolutionManagement.repositories")
+    s = updated
     settings.write_text(s)
 
 g = app_gradle.read_text()
