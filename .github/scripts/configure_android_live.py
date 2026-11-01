@@ -21,10 +21,10 @@ if "jitpack.io" not in s:
 g = app_gradle.read_text()
 dep = 'implementation("com.github.pedroSG94.RootEncoder:library:2.6.2")' if app_gradle.suffix == ".kts" else "implementation 'com.github.pedroSG94.RootEncoder:library:2.6.2'"
 if "RootEncoder:library" not in g:
-    if app_gradle.suffix == ".kts":
-        g = re.sub(r"dependencies\s*\{", lambda m: m.group(0) + "\n    " + dep, g, count=1)
+    if re.search(r"(?m)^\s*dependencies\s*\{", g):
+        g = re.sub(r"(?m)^(\s*dependencies\s*\{)", lambda m: m.group(1) + "\n    " + dep, g, count=1)
     else:
-        g = re.sub(r"dependencies\s*\{", lambda m: m.group(0) + "\n    " + dep, g, count=1)
+        g += "\n\ndependencies {\n    " + dep + "\n}\n"
     if "RootEncoder:library" not in g:
         raise SystemExit("Could not insert RootEncoder dependency")
     app_gradle.write_text(g)
