@@ -145,7 +145,6 @@ class LivePublisherService : Service(), ConnectChecker {
       projection = manager.getMediaProjection(resultCode, data)
         ?: throw IllegalStateException("Android did not provide a screen capture session.")
       val stream = GenericStream(this, this, NoVideoSource(), com.pedro.encoder.input.sources.audio.NoAudioSource())
-      stream.getGlInterface().setForceRender(true, 15)
       if (!stream.prepareVideo(720, 1280, 1_800_000) || !stream.prepareAudio(44_100, true, 128_000)) {
         stream.release()
         throw IllegalStateException("The device could not prepare H.264/AAC encoders.")
