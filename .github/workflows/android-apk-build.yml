@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-      - feature/android-apk-build-workflow
+      - feature/android-apk-build-workflow\n      - feature/native-rtmps-publisher
   pull_request:
     branches:
       - main
@@ -39,6 +39,9 @@ jobs:
           if [ ! -d android ]; then
             flutter create . --platforms=android --org com.aizora --project-name aizora_infinite_text_live
           fi
+
+      - name: Configure native RTMPS screen publisher
+        run: python3 .github/scripts/configure_android_live.py
 
       - name: Install Android SDK 36
         run: |
