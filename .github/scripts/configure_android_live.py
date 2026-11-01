@@ -71,10 +71,131 @@ if "RootEncoder:library" not in g:
     app_gradle.write_text(g)
 
 m = manifest.read_text()
+
+# Declare the Android 14 MediaProjection foreground-service permissions and service.
+if "android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" not in m:
+    m = m.replace("<manifest", '<manifest', 1)
+    m = m.replace("<application", '    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />\\n    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />\\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />\\n    <application', 1)
+service_decl = '        <service android:name=".LivePublisherService" android:exported="false" android:foregroundServiceType="mediaProjection" />'
+if "LivePublisherService" not in m:
+    m = m.replace("</application>", service_decl + "\\n    </application>")
+manifest.write_text(m)
+
 if "android.permission.INTERNET" not in m:
     m = m.replace("<manifest", '<manifest')
     m = re.sub(r"(<application)", '    <uses-permission android:name="android.permission.INTERNET" />\n    \\1', m, count=1)
     manifest.write_text(m)
+
+service = kotlin_dir / "LivePublisherService.kt"
+service.write_text(r'''package com.aizora.aizora_infinite_text_live
+
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.Service
+import android.content.Context
+import android.content.Intent
+import android.content.pm.ServiceInfo
+import android.media.projection.MediaProjection
+import android.media.projection.MediaProjectionManager
+import android.os.Build
+import android.os.IBinder
+import com.pedro.common.ConnectChecker
+import com.pedro.encoder.input.sources.audio.InternalAudioSource
+import com.pedro.encoder.input.sources.video.NoVideoSource
+import com.pedro.encoder.input.sources.video.ScreenSource
+import com.pedro.library.generic.GenericStream
+
+class LivePublisherService : Service(), ConnectChecker {
+  companion object {
+    const val ACTION_CONNECTED = "com.aizora.live.CONNECTED"
+    const val ACTION_ERROR = "com.aizora.live.ERROR"
+    const val EXTRA_RESULT_CODE = "projection_result_code"
+    const val EXTRA_PROJECTION_DATA = "projection_data"
+    const val EXTRA_ENDPOINT = "endpoint"
+    private const val CHANNEL_ID = "aizora_live_publisher"
+    private const val NOTIFICATION_ID = 7402
+  }
+
+  private var projection: MediaProjection? = null
+  private var publisher: GenericStream? = null
+
+  override fun onBind(intent: Intent?): IBinder? = null
+
+  override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+    try {
+      val notification = createNotification()
+      if (Build.VERSION.SDK_INT >= 29) {
+        startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION)
+      } else {
+        startForeground(NOTIFICATION_ID, notification)
+      }
+      val resultCode = intent?.getIntExtra(EXTRA_RESULT_CODE, 0) ?: 0
+      @Suppress("DEPRECATION")
+      val data = if (Build.VERSION.SDK_INT >= 33) intent?.getParcelableExtra(EXTRA_PROJECTION_DATA, Intent::class.java)
+        else intent?.getParcelableExtra(EXTRA_PROJECTION_DATA)
+      val endpoint = intent?.getStringExtra(EXTRA_ENDPOINT).orEmpty()
+      if (resultCode == 0 || data == null || endpoint.isBlank()) {
+        throw IllegalArgumentException("Screen permission or RTMP endpoint is missing.")
+      }
+      val manager = getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
+      projection = manager.getMediaProjection(resultCode, data)
+        ?: throw IllegalStateException("Android did not provide a screen capture session.")
+      val stream = GenericStream(this, this, NoVideoSource(), com.pedro.encoder.input.sources.audio.NoAudioSource())
+      stream.getGlInterface().setForceRender(true, 15)
+      if (!stream.prepareVideo(720, 1280, 1_800_000) || !stream.prepareAudio(44_100, true, 128_000)) {
+        stream.release()
+        throw IllegalStateException("The device could not prepare H.264/AAC encoders.")
+      }
+      stream.changeVideoSource(ScreenSource(applicationContext, projection!!))
+      stream.changeAudioSource(InternalAudioSource(projection!!))
+      publisher = stream
+      stream.startStream(endpoint)
+    } catch (error: Exception) {
+      sendBroadcast(Intent(ACTION_ERROR).setPackage(packageName).putExtra("message", error.message ?: "Publisher startup failed."))
+      stopSelf()
+    }
+    return START_NOT_STICKY
+  }
+
+  private fun createNotification(): Notification {
+    val manager = getSystemService(NotificationManager::class.java)
+    if (Build.VERSION.SDK_INT >= 26) {
+      manager.createNotificationChannel(NotificationChannel(CHANNEL_ID, "AIZORA Live", NotificationManager.IMPORTANCE_LOW))
+    }
+    val builder = if (Build.VERSION.SDK_INT >= 26) Notification.Builder(this, CHANNEL_ID) else Notification.Builder(this)
+    return builder.setContentTitle("AIZORA Live is running")
+      .setContentText("Screen streaming is active. Tap Stop Live in AIZORA to end it.")
+      .setSmallIcon(android.R.drawable.presence_video_online)
+      .setOngoing(true)
+      .build()
+  }
+
+  override fun onConnectionStarted(url: String) {}
+  override fun onConnectionSuccess() {
+    sendBroadcast(Intent(ACTION_CONNECTED).setPackage(packageName))
+  }
+  override fun onNewBitrate(bitrate: Long) {}
+  override fun onConnectionFailed(reason: String) {
+    sendBroadcast(Intent(ACTION_ERROR).setPackage(packageName).putExtra("message", reason))
+    stopSelf()
+  }
+  override fun onDisconnect() {}
+  override fun onAuthError() {
+    sendBroadcast(Intent(ACTION_ERROR).setPackage(packageName).putExtra("message", "Streaming server rejected the stream key."))
+    stopSelf()
+  }
+  override fun onAuthSuccess() {}
+  override fun onDestroy() {
+    try { publisher?.stopStream() } catch (_: Exception) {}
+    try { publisher?.release() } catch (_: Exception) {}
+    publisher = null
+    try { projection?.stop() } catch (_: Exception) {}
+    projection = null
+    super.onDestroy()
+  }
+}
+''')
 
 pkg = "com.aizora.aizora_infinite_text_live"
 kotlin_dir = root / "app/src/main/kotlin" / Path(*pkg.split("."))
@@ -83,37 +204,57 @@ main = kotlin_dir / "MainActivity.kt"
 main.write_text(r'''package com.aizora.aizora_infinite_text_live
 
 import android.app.Activity
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.media.projection.MediaProjection
+import android.content.IntentFilter
 import android.media.projection.MediaProjectionManager
 import android.os.Build
-import com.pedro.common.ConnectChecker
-import com.pedro.encoder.input.sources.audio.InternalAudioSource
-import com.pedro.encoder.input.sources.audio.NoAudioSource
-import com.pedro.encoder.input.sources.video.NoVideoSource
-import com.pedro.encoder.input.sources.video.ScreenSource
-import com.pedro.library.generic.GenericStream
+import com.aizora.aizora_infinite_text_live.LivePublisherService
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
-class MainActivity : FlutterActivity(), ConnectChecker {
+class MainActivity : FlutterActivity() {
   private val channelName = "aizora.live"
   private val projectionRequest = 7401
   private var pendingStart: MethodChannel.Result? = null
-  private var stream: GenericStream? = null
-  private var projection: MediaProjection? = null
-  private var endpoint: String? = null
+  private var receiverRegistered = false
+  private val liveReceiver = object : BroadcastReceiver() {
+    override fun onReceive(context: Context?, intent: Intent?) {
+      when (intent?.action) {
+        LivePublisherService.ACTION_CONNECTED -> {
+          pendingStart?.success("Connected to streaming server; verify the live preview on Facebook.")
+          pendingStart = null
+        }
+        LivePublisherService.ACTION_ERROR -> {
+          pendingStart?.error("PUBLISHER_ERROR", intent.getStringExtra("message") ?: "Publisher failed.", null)
+          pendingStart = null
+        }
+      }
+    }
+  }
 
   override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
     super.configureFlutterEngine(flutterEngine)
+    val filter = IntentFilter().apply {
+      addAction(LivePublisherService.ACTION_CONNECTED)
+      addAction(LivePublisherService.ACTION_ERROR)
+    }
+    if (Build.VERSION.SDK_INT >= 33) {
+      registerReceiver(liveReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+    } else {
+      @Suppress("DEPRECATION")
+      registerReceiver(liveReceiver, filter)
+    }
+    receiverRegistered = true
+
     MethodChannel(flutterEngine.dartExecutor.binaryMessenger, channelName)
       .setMethodCallHandler { call, result ->
         when (call.method) {
           "startLive" -> {
-            if (pendingStart != null || stream?.isStreaming == true) {
-              result.error("ALREADY_RUNNING", "A live session is already starting or running.", null)
+            if (pendingStart != null) {
+              result.error("ALREADY_RUNNING", "A live session is already starting.", null)
               return@setMethodCallHandler
             }
             val server = call.argument<String>("serverUrl")?.trim().orEmpty().trimEnd('/')
@@ -122,17 +263,18 @@ class MainActivity : FlutterActivity(), ConnectChecker {
               result.error("INVALID_INPUT", "A valid RTMP(S) server and stream key are required.", null)
               return@setMethodCallHandler
             }
-            endpoint = "$server/$key"
             pendingStart = result
             val manager = getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
             @Suppress("DEPRECATION")
             startActivityForResult(manager.createScreenCaptureIntent(), projectionRequest)
           }
           "stopLive" -> {
-            stopPublisher()
+            stopService(Intent(this, LivePublisherService::class.java))
+            pendingStart?.error("CANCELLED", "Live start was cancelled.", null)
+            pendingStart = null
             result.success("Stop requested")
           }
-          "status" -> result.success(if (stream?.isStreaming == true) "streaming" else "stopped")
+          "status" -> result.success("Use Facebook Live Producer to verify the stream.")
           else -> result.notImplemented()
         }
       }
@@ -145,78 +287,37 @@ class MainActivity : FlutterActivity(), ConnectChecker {
     val callback = pendingStart ?: return
     if (resultCode != Activity.RESULT_OK || data == null) {
       pendingStart = null
-      endpoint = null
       callback.error("CAPTURE_DENIED", "Screen capture permission was not granted.", null)
       return
     }
     try {
-      if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
-        throw IllegalStateException("Internal app audio capture requires Android 10 or newer.")
+      val server = intent.getStringExtra("unused") // Do not reuse Activity intent for credentials.
+      val callData = liveStartData
+      if (callData == null) throw IllegalStateException("Live server details were lost.")
+      val serviceIntent = Intent(this, LivePublisherService::class.java).apply {
+        putExtra(LivePublisherService.EXTRA_RESULT_CODE, resultCode)
+        putExtra(LivePublisherService.EXTRA_PROJECTION_DATA, data)
+        putExtra(LivePublisherService.EXTRA_ENDPOINT, callData)
       }
-      val manager = getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
-      projection = manager.getMediaProjection(resultCode, data)
-        ?: throw IllegalStateException("Android did not provide a screen capture session.")
-      val publisher = GenericStream(this, this, NoVideoSource(), NoAudioSource())
-      publisher.getGlInterface().setForceRender(true, 15)
-      if (!publisher.prepareVideo(720, 1280, 1_800_000) ||
-          !publisher.prepareAudio(44_100, true, 128_000)) {
-        publisher.release()
-        throw IllegalStateException("The device could not prepare H.264/AAC encoders.")
-      }
-      publisher.changeVideoSource(ScreenSource(applicationContext, projection!!))
-      publisher.changeAudioSource(InternalAudioSource(projection!!))
-      stream = publisher
-      publisher.startStream(endpoint!!)
-      // The result is completed only by the encoder's connection callback.
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) startForegroundService(serviceIntent) else startService(serviceIntent)
+      liveStartData = null
     } catch (error: Exception) {
       pendingStart = null
-      endpoint = null
-      stopPublisher()
-      callback.error("PUBLISHER_START_FAILED", error.message ?: "Could not start publisher.", null)
+      callback.error("PUBLISHER_START_FAILED", error.message ?: "Could not start foreground publisher.", null)
     }
   }
 
-  private fun stopPublisher() {
-    pendingStart?.let {
-      it.error("CANCELLED", "Live start was cancelled.", null)
-    }
-    pendingStart = null
-    try { stream?.stopStream() } catch (_: Exception) {}
-    try { stream?.release() } catch (_: Exception) {}
-    stream = null
-    try { projection?.stop() } catch (_: Exception) {}
-    projection = null
-    endpoint = null
-  }
+  private var liveStartData: String? = null
 
-  override fun onConnectionStarted(url: String) {}
-  override fun onConnectionSuccess() {
-    runOnUiThread {
-      pendingStart?.success("Connected to streaming server; verify the live preview on Facebook.")
-      pendingStart = null
-    }
-  }
-  override fun onNewBitrate(bitrate: Long) {}
-  override fun onConnectionFailed(reason: String) {
-    runOnUiThread {
-      pendingStart?.error("RTMP_CONNECTION_FAILED", reason, null)
-      pendingStart = null
-      stopPublisher()
-    }
-  }
-  override fun onDisconnect() {}
-  override fun onAuthError() {
-    runOnUiThread {
-      pendingStart?.error("RTMP_AUTH_ERROR", "The streaming server rejected the stream key.", null)
-      pendingStart = null
-      stopPublisher()
-    }
-  }
-  override fun onAuthSuccess() {}
   override fun onDestroy() {
-    stopPublisher()
+    if (receiverRegistered) {
+      try { unregisterReceiver(liveReceiver) } catch (_: Exception) {}
+    }
     super.onDestroy()
   }
+
+  // Store the endpoint only for the duration of the user-approved start flow.
+  private fun rememberEndpoint(endpoint: String) { liveStartData = endpoint }
 }
-''')
+'''))
 print("Generated RootEncoder Android publisher source and configured dependency/permissions.")
