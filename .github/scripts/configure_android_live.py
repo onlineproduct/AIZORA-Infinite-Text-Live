@@ -15,14 +15,14 @@ jitpack = 'maven { url = uri("https://jitpack.io") }' if settings.suffix == ".kt
 if "jitpack.io" not in s:
     if "dependencyResolutionManagement" not in s:
         block = (
-            '\\ndependencyResolutionManagement {\\n'
-            '    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)\\n'
-            '    repositories {\\n'
-            '        google()\\n'
-            '        mavenCentral()\\n'
-            '        ' + jitpack + '\\n'
-            '    }\\n'
-            '}\\n'
+            '\ndependencyResolutionManagement {\n'
+            '    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)\n'
+            '    repositories {\n'
+            '        google()\n'
+            '        mavenCentral()\n'
+            '        ' + jitpack + '\n'
+            '    }\n'
+            '}\n'
         )
         s += block
     else:
@@ -43,7 +43,7 @@ if "jitpack.io" not in s:
             close_pos += 1
         if depth:
             raise SystemExit("Unbalanced dependencyResolutionManagement.repositories block")
-        s = s[:close_pos - 1] + "\\n        " + jitpack + "\\n    " + s[close_pos - 1:]
+        s = s[:close_pos - 1] + "\n        " + jitpack + "\n    " + s[close_pos - 1:]
     settings.write_text(s)
 
 g = app_gradle.read_text()
