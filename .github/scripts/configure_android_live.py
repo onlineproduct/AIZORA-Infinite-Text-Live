@@ -86,6 +86,9 @@ if "android.permission.INTERNET" not in m:
     m = re.sub(r"(<application)", '    <uses-permission android:name="android.permission.INTERNET" />\n    \\1', m, count=1)
     manifest.write_text(m)
 
+kotlin_dir = root / "app/src/main/kotlin/com/aizora/aizora_infinite_text_live"
+kotlin_dir.mkdir(parents=True, exist_ok=True)
+
 service = kotlin_dir / "LivePublisherService.kt"
 service.write_text(r'''package com.aizora.aizora_infinite_text_live
 
