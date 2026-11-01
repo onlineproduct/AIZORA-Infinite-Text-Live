@@ -8,16 +8,42 @@ manifest = root / "app/src/main/AndroidManifest.xml"
 if not settings or not app_gradle or not manifest.exists():
     raise SystemExit("Generated Android Gradle files or manifest are missing")
 
-# Add JitPack specifically to dependencyResolutionManagement.repositories.
-# Adding it only to pluginManagement.repositories does not resolve app libraries.
+# Add JitPack to dependency resolution. Recent Flutter templates may omit
+# dependencyResolutionManagement entirely, so create it when absent.
 s = settings.read_text()
 jitpack = 'maven { url = uri("https://jitpack.io") }' if settings.suffix == ".kts" else "maven { url 'https://jitpack.io' }"
 if "jitpack.io" not in s:
-    pattern = r"(?s)(dependencyResolutionManagement\s*\{.*?repositories\s*\{.*?mavenCentral\(\))"
-    updated, count = re.subn(pattern, lambda m: m.group(1) + "\n        " + jitpack, s, count=1)
-    if count != 1:
-        raise SystemExit("Could not add JitPack to dependencyResolutionManagement.repositories")
-    s = updated
+    if "dependencyResolutionManagement" not in s:
+        block = (
+            '\\ndependencyResolutionManagement {\\n'
+            '    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)\\n'
+            '    repositories {\\n'
+            '        google()\\n'
+            '        mavenCentral()\\n'
+            '        ' + jitpack + '\\n'
+            '    }\\n'
+            '}\\n'
+        )
+        s += block
+    else:
+        # Insert into the repositories block nested under dependencyResolutionManagement.
+        marker = "dependencyResolutionManagement"
+        pos = s.find(marker)
+        repo_pos = s.find("repositories", pos)
+        open_pos = s.find("{", repo_pos)
+        if repo_pos < 0 or open_pos < 0:
+            raise SystemExit("Could not locate dependencyResolutionManagement.repositories")
+        depth = 1
+        close_pos = open_pos + 1
+        while close_pos < len(s) and depth:
+            if s[close_pos] == "{":
+                depth += 1
+            elif s[close_pos] == "}":
+                depth -= 1
+            close_pos += 1
+        if depth:
+            raise SystemExit("Unbalanced dependencyResolutionManagement.repositories block")
+        s = s[:close_pos - 1] + "\\n        " + jitpack + "\\n    " + s[close_pos - 1:]
     settings.write_text(s)
 
 g = app_gradle.read_text()
