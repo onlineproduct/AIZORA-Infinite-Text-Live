@@ -16,7 +16,7 @@ if "jitpack.io" not in s:
     if "dependencyResolutionManagement" not in s:
         block = (
             '\ndependencyResolutionManagement {\n'
-            '    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)\n'
+            '    repositoriesMode.set(RepositoriesMode.PREFER_PROJECT)\n'
             '    repositories {\n'
             '        google()\n'
             '        mavenCentral()\n'
@@ -45,6 +45,22 @@ if "jitpack.io" not in s:
             raise SystemExit("Unbalanced dependencyResolutionManagement.repositories block")
         s = s[:close_pos - 1] + "\n        " + jitpack + "\n    " + s[close_pos - 1:]
     settings.write_text(s)
+
+# Flutter's generated root build.gradle(.kts) declares project repositories.
+# Add JitPack there as well and prefer project repositories to avoid Gradle's
+# FAIL_ON_PROJECT_REPOS conflict with Flutter's standard template.
+root_gradle = next((p for p in [root / "build.gradle.kts", root / "build.gradle"] if p.exists()), None)
+if not root_gradle:
+    raise SystemExit("Root Android Gradle file is missing")
+rg = root_gradle.read_text()
+root_jitpack = 'maven { url = uri("https://jitpack.io") }' if root_gradle.suffix == ".kts" else "maven { url 'https://jitpack.io' }"
+if "jitpack.io" not in rg:
+    match = re.search(r"(?m)^(\\s*repositories\\s*\\{)", rg)
+    if not match:
+        raise SystemExit("Could not locate root project repositories block")
+    insert_at = match.end()
+    rg = rg[:insert_at] + "\\n        " + root_jitpack + rg[insert_at:]
+    root_gradle.write_text(rg)
 
 g = app_gradle.read_text()
 dep = 'implementation("com.github.pedroSG94.RootEncoder:library:2.6.2")' if app_gradle.suffix == ".kts" else "implementation 'com.github.pedroSG94.RootEncoder:library:2.6.2'"
